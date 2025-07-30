@@ -5,11 +5,20 @@
 - fastapi + supervisor/systemd + nginx
   - nginx for https/certs, load balancing(?), caching(?), ssl/tls(?), security(?), rate limiting(?)
 - sitting on google cloud compute instance
-- use external ip for api calls. people don't really see this, so the ip doesn't really matter.
+- use external ip for api calls. people don't really see this, so a dns hostname isn't necessary
   - protect routes with auth 😩
-- use files to determine output of functions called from the code written
-  - output to text
-- install specific executables for specific languages (c++, python, js) with drop-in templates for poker function
+- running submitted code files
+  - use file with json to provide input. should just give the game state
+  - code should fill in a code template that reads json game state and passes that into a function
+  - output to text/stdout
+  - python subprocess lib to run
+  - install specific executables for specific languages (c++, python, js)
+- restricting malicious code
+  - c++: no file i/o (fstream, iostream, cstdio), raw mem management or system interaction (memory, cstdlib)
+  - py: [restricted python](https://restrictedpython.readthedocs.io/)
+  - js: node.js v23.5 has --permission to restrict, deno is already secure by default (tehnically still not safe enough)
+- watch timing, errors of process to prevent stalling out
+- host to control what players go to what game, tournament manager
 
 ## other ideas
 
