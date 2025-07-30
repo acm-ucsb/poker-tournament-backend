@@ -1,14 +1,15 @@
-def main():
-    file1 = open("func1.py", "r")
-    file1_code = file1.read()
-    file1.close()
+from typing import Union
 
-    values = {"a": 2}
-    exec(file1_code, globals(), values)
-    exec(file1_code, globals(), values)
-    print(values)
-    
+from fastapi import FastAPI
+
+app = FastAPI()
 
 
-if __name__ == "__main__":
-    main()
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+
+@app.get("/items/{item_id}")
+def read_item(item_id: int, q: Union[str, None] = None):
+    return {"item_id": item_id, "q": q}
