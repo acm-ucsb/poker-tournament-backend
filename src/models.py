@@ -1,4 +1,3 @@
-from typing import List
 from pydantic import BaseModel, Field
 
 
@@ -8,8 +7,8 @@ class Card(BaseModel):
 
 
 class GameState(BaseModel):
-    community_cards: List[Card]
+    community_cards: list[Card]
     num_players: int
     current_round: int
-    players: List[int]
+    players: list[int]
     action_on: int
