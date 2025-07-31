@@ -17,8 +17,9 @@
   - c++: no file i/o (fstream, iostream, cstdio), raw mem management or system interaction (memory, cstdlib)
   - py: [restricted python](https://restrictedpython.readthedocs.io/)
   - js: node.js v23.5 has --permission to restrict, deno is already secure by default (tehnically still not safe enough)
-- watch timing, errors of process to prevent stalling out
+- prevent code execution stalling: watch timing, errors of processes
 - host to control what players go to what game, tournament manager
+- websockets: live updated game state for each game being played in the tournament
 
 ## other ideas
 
