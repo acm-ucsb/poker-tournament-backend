@@ -10,7 +10,7 @@
 - running submitted code files
   - use file with json to provide input. should just give the game state
   - code should fill in a code template that reads json game state and passes that into a function
-  - output to text/stdout
+  - output to stdout
   - python subprocess lib to run
   - install specific executables for specific languages (c++, python, js)
 - restricting malicious code
@@ -20,6 +20,18 @@
 - prevent code execution stalling: watch timing, errors of processes
 - host to control what players go to what game, tournament manager
 - websockets: live updated game state for each game being played in the tournament
+
+## finished tasks
+
+- fastapi setup
+- google cloud compute hooked up to static ext ip (35.212.235.70) with a production server than can run on port 8000
+- basic websockets for synced gamestate display
+  - currently just a chat with all open connections
+- file upload to store user submissions
+- subprocess to run uploaded code files
+  - in the background
+  - py, c++ code can be run, return stdout
+  - python can access the stdout as a `str` after process finishes
 
 ## other ideas
 
