@@ -5,7 +5,7 @@ ifeq ($(OS),Windows_NT)
 	CLEAN_CMD = rmdir /s /q uploads
 else
 # unix-specific commands
-	VENV_ACTIVATE_CMD = source .venv/bin/activate
+	VENV_ACTIVATE_CMD = . .venv/bin/activate
 	CLEAN_CMD = rm -rf uploads
 endif
 
