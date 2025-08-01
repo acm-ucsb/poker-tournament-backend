@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import models
 
 game_router = APIRouter(prefix="/game", tags=["game"])
@@ -19,7 +19,7 @@ def read_gamestate(game_id: int):
 @game_router.post("/{game_id}/next", response_model=str)
 def next_move(game_id: int, moves: int):
     # Define the name of the directory
-    directory_name = os.path.join("src", "test_data")
+    directory_name = os.path.join("test_data")
 
     # Define the number of files you want to create
     number_of_files = moves
@@ -45,3 +45,47 @@ def next_move(game_id: int, moves: int):
     return f"✅ Successfully created {number_of_files} files in the '{directory_name}' directory."
 
     # should return the gamestate after the move was made.
+
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(
+        self,
+        message: str,
+        websocket: WebSocket,
+        not_to_self=False,
+    ):
+        for connection in self.active_connections:
+            if not_to_self and connection == websocket:
+                pass
+            else:
+                await connection.send_text(message)
+
+
+manager = ConnectionManager()
+
+
+@game_router.websocket("/ws/")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+
+            await manager.send_personal_message(f"you: {data}", websocket)
+            await manager.broadcast(f"???: {data}", websocket, not_to_self=True)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        await manager.broadcast("someone left the chat.", websocket)
