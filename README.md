@@ -1,5 +1,41 @@
 # 35.212.235.70:8000
 
+## installation
+
+Using [uv](https://docs.astral.sh/uv/) as the python project manager for fastapi as the backend server.
+
+```sh
+uv sync
+```
+
+This creates a venv, downloads deps, also provides python version installation. Essentially like npm for node, or cargo for rust.
+It's actually so fast and amazing; adding deps is also easy with just `uv add <pkg-name>`. **USE UV PLEASE**. There's also
+`ruff` for formatting; that's more quality of life to keep everything clean.
+
+Makefile has most of the required stuff needed to run.
+
+- `dev` (default): dev server
+- `run`: prod server
+- `venv`: activating venv
+- `format`: ruff to format all python code
+
+## backend overview
+
+### very broad baseline api
+
+- account for host, human and bot (handled by supabase with frontend or smth)
+  - prob should keep track of money for each account
+- games, game state: `wss://<ip>:<port>/` like this for obserbing websocket state. prob just get websockets working and everything
+- host: control games, start/stop, assigning human players
+- human player: send message to websocket with move (only during their turn), can also be used for testing??
+- submission: file uploads into template
+
+### additional api stuff
+
+- test games: send in user_ids into a room to battle or smth?
+
+schemas will be figured out as it goes
+
 ## general notes
 
 - fastapi + supervisor/systemd + nginx

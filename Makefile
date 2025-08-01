@@ -21,8 +21,12 @@ run:
 venv:
 	$(VENV_ACTIVATE_CMD)
 
+# this is mostly cuz i forgor how to deactivate the venv sometimes lmao. probably not needed to do ever
+venv-deactivate:
+	deactivate
+
 format:
 	ruff format
 
-clean:
-	$(CLEAN_CMD)
+# clean:
+# 	$(CLEAN_CMD)
