@@ -1,6 +1,6 @@
 # 35.212.235.70:8000
 
-## wtf bruh.
+## general notes
 
 - fastapi + supervisor/systemd + nginx
   - nginx for https/certs, load balancing(?), caching(?), ssl/tls(?), security(?), rate limiting(?)
