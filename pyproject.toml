@@ -1,5 +1,5 @@
 [project]
-name = "poker-backend-server"
+name = "poker-tournament-backend"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
