@@ -8,11 +8,11 @@ user_router = APIRouter(prefix="/user", tags=["user"])
 
 @user_router.get(
     "/",
-    response_model=dict,
+    response_model=User,
     responses=auth_required_responses,
 )
 def get_user(user: User = Depends(verify_user)):
-    return user.model_dump()
+    return user
 
 
 @user_router.get(
