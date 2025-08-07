@@ -1,4 +1,18 @@
 from pydantic import BaseModel, Field
+from typing import Any
+from fastapi import status
+
+
+class ErrorResponse(BaseModel):
+    detail: str
+
+
+auth_required_responses: dict[int | str, dict[str, str | Any]] = {
+    status.HTTP_401_UNAUTHORIZED: {
+        "model": ErrorResponse,
+        "detail": "Not authenticated",
+    }
+}
 
 
 class Card(BaseModel):
