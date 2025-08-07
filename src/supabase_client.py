@@ -4,7 +4,7 @@ from supabase import create_client, Client
 
 load_dotenv()
 
-SUPABASE_DATABASE_URL: str = os.getenv("DATABASE_URL") or ""
+SUPABASE_DATABASE_URL: str = os.getenv("SUPABASE_DATABASE_URL") or ""
 SUPABASE_SECRET_KEY: str = os.getenv("SUPABASE_SECRET_KEY") or ""
 
 if SUPABASE_DATABASE_URL == "" or SUPABASE_SECRET_KEY == "":
