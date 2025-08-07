@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 from game import game_router
 from submit import submit_router
+from user import user_router
 
 
 app = FastAPI()
+
+app.include_router(user_router)
 app.include_router(game_router)
 app.include_router(submit_router)
-
 
 # demo code routes
 # @app.get("/")

@@ -12,3 +12,6 @@ wheels/
 # etc
 .ruff_cache
 .vscode
+
+# Environment variables
+.env
