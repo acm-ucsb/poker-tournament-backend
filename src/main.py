@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from game import game_router
-from submit import submit_router
-from user import user_router
+from src.game import game_router
+from src.submit import submit_router
+from src.user import user_router
 
 
 app = FastAPI()

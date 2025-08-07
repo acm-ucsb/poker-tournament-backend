@@ -1,7 +1,7 @@
 from fastapi import Depends, APIRouter
-from models import auth_required_responses
 from gotrue import User
-from auth import verify_user
+from src.util.models import auth_required_responses
+from src.util.auth import verify_user
 
 user_router = APIRouter(prefix="/user", tags=["user"])
 

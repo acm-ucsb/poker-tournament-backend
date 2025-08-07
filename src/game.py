@@ -1,6 +1,6 @@
 import os
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-import models
+from src.util import models
 
 game_router = APIRouter(prefix="/game", tags=["game"])
 
