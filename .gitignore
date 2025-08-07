@@ -13,5 +13,8 @@ wheels/
 .ruff_cache
 .vscode
 
+# Testing
+tests/output/
+
 # Environment variables
 .env
