@@ -10,13 +10,13 @@ uv sync
 
 This creates a venv, downloads deps, also provides python version installation. Essentially like npm for node, or cargo for rust.
 It's actually so fast and amazing; adding deps is also easy with just `uv add <pkg-name>`. **USE UV PLEASE**. There's also
-`ruff` for formatting; that's more quality of life to keep everything clean.
+`ruff` for formatting; that's more quality of life to keep everything clean. Don't forget to activate your python
+virtual environment.
 
 Makefile has most of the required stuff needed to run.
 
 - `dev` (default): dev server
 - `run`: prod server
-- `venv`: activating venv
 - `format`: ruff to format all python code
 
 ## backend overview
@@ -57,7 +57,7 @@ schemas will be figured out as it goes
 - host to control what players go to what game, tournament manager
 - websockets: live updated game state for each game being played in the tournament
 
-## finished tasks
+## finished tasks (old stuff)
 
 - fastapi setup
 - google cloud compute hooked up to static ext ip (35.212.235.70) with a production server than can run on port 8000
