@@ -1,13 +1,13 @@
-import os
-import subprocess
+# import os
+# import subprocess
 import pathlib
-
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi.responses import Response
 from gotrue import User
-from src.util.auth import verify_user
-from src.util.models import auth_required_responses
-from src.util.supabase_client import db_client
 import asyncio
+from src.util.auth import verify_user
+from src.util.models import unauth_res
+from src.util.supabase_client import db_client
 
 submit_router = APIRouter(prefix="/submit", tags=["submit"])
 
@@ -18,13 +18,7 @@ uploads_dir = pathlib.Path("..", "poker_tournament_uploads").resolve()
 file_lock = asyncio.Lock()
 
 
-# if re-upload a file, old file will get deleted!
-@submit_router.post("/", responses=auth_required_responses)
-async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
-    # decode bytes -> str
-    # add .replace("\r\n", "\n") if want to normalize line ending wtvr
-    content_str = (await file.read()).decode("utf-8")
-
+def get_team_id(user: User):
     # get team id from foreign key in users table
     team_id = (
         db_client.table("users").select("team_id").eq("id", user.id).single().execute()
@@ -36,30 +30,72 @@ async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
             detail="user is not associated with any team",
         )
 
+    return str(team_id)
+
+
+# deletes only the first one it sees. there should only be one.
+async def delete_file_with_stem(stem: str) -> str | None:
+    if uploads_dir.is_dir():
+        # lock before iterdir just in case. i dont wanna get anything messed up
+        async with file_lock:
+            for entry in uploads_dir.iterdir():
+                if entry.is_file() and entry.stem == stem:
+                    fname = entry.name
+                    entry.unlink()
+                    return fname
+
+
+# if re-upload a file, old file will get deleted!
+@submit_router.post("/", responses=unauth_res)
+async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
+    # decode bytes -> str
+    # add .replace("\r\n", "\n") if want to normalize line ending wtvr
+    content_str = (await file.read()).decode("utf-8")
+
+    team_id = get_team_id(user)
+    await delete_file_with_stem(team_id)  # delete all other team files. this is atomic
+
     async with file_lock:
         uploads_dir.mkdir(exist_ok=True)
 
-    if file.filename is not None:
-        # use team id, but for now just test with the uid
-        suffix = pathlib.Path(file.filename or "test.cpp").suffix
-        team_fname = pathlib.Path(str(team_id) + suffix)
+    if file.filename is None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        # joining paths
-        file_path = uploads_dir / team_fname
+    # use team id, but for now just test with the uid
+    suffix = pathlib.Path(file.filename or "test.cpp").suffix
+    team_fname = pathlib.Path(team_id + suffix)
 
-        async with file_lock:
-            # save the file to uploads directory
-            with file_path.open("w", encoding="utf-8") as f:
-                f.write(content_str)
+    # joining paths
+    file_path = uploads_dir / team_fname
 
-        # set team.has_submitted_code to true
-        db_client.table("teams").update({"has_submitted_code": True}).eq(
-            "id", team_id
-        ).execute()
+    async with file_lock:
+        # save the file to uploads directory
+        with file_path.open("w", encoding="utf-8") as f:
+            f.write(content_str)
 
-        return {"file_saved_as": team_fname}
+    # set team.has_submitted_code to true
+    db_client.table("teams").update({"has_submitted_code": True}).eq(
+        "id", team_id
+    ).execute()
 
-    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    return {"file_saved": team_fname}
+
+
+@submit_router.delete("/del", responses=unauth_res)
+async def delete_file(user: User = Depends(verify_user)):
+    team_id = get_team_id(user)
+
+    if not uploads_dir.is_dir():
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    db_client.table("teams").update({"has_submitted_code": False}).eq(
+        "id", team_id
+    ).execute()
+
+    team_fname = await delete_file_with_stem(team_id)
+    if team_fname:
+        return {"file_deleted": team_fname}
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     # if file.filename.endswith(".py"):
     #     process = subprocess.run(

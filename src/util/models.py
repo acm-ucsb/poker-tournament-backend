@@ -7,12 +7,14 @@ class ErrorResponse(BaseModel):
     detail: str
 
 
-auth_required_responses: dict[int | str, dict[str, str | Any]] = {
+unauth_res: dict[int | str, dict[str, str | Any]] = {
     status.HTTP_401_UNAUTHORIZED: {
         "model": ErrorResponse,
-        "detail": "Not authenticated",
+        "detail": "not authenticated",
     }
 }
+
+no_content_res: dict[int | str, dict[str, str | Any]] = {status.HTTP_204_NO_CONTENT: {}}
 
 
 class Card(BaseModel):
