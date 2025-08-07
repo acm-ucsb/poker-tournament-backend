@@ -11,11 +11,22 @@ from src.util.supabase_client import db_client
 
 submit_router = APIRouter(prefix="/submission", tags=["submission"])
 
-# all files are sitting in this dir, <team_id>.<cpp | py>
+allowed_file_extensions = [".cpp", ".py"]
+
+# all files are sitting in the parent dir that the repo is in, <team_id>.<cpp | py>
 uploads_dir = pathlib.Path("..", "poker_tournament_uploads").resolve()
 
 # actually using a mutex, for any fs writes, preventing race conditions
 file_lock = asyncio.Lock()
+
+
+# TODO: should check game state of tournament. if active, should not allow edit access
+def check_edit_access():
+    can_users_edit = True
+    if not can_users_edit:
+        raise HTTPException(
+            status_code=403, detail="files cannot be updated at this time"
+        )
 
 
 def get_team_id(user: User):
@@ -51,9 +62,8 @@ async def delete_file_with_stem(stem: str) -> str | None:
         async with file_lock:
             for entry in uploads_dir.iterdir():
                 if entry.is_file() and entry.stem == stem:
-                    fname = entry.name
                     entry.unlink()
-                    return fname
+                    return entry.name
 
 
 @submit_router.get("/", response_model=SubmittedFile, responses=unauth_res)
@@ -70,25 +80,36 @@ async def get_submitted_file(user: User = Depends(verify_user)):
 # if re-upload a file, old file will get deleted!
 @submit_router.post("/", responses=unauth_res)
 async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
+    check_edit_access()
+
     # decode bytes -> str
     # add .replace("\r\n", "\n") if want to normalize line ending wtvr
     content_str = (await file.read()).decode("utf-8")
 
     team_id = get_team_id(user)
-    await delete_file_with_stem(team_id)  # delete all other team files. this is atomic
 
     async with file_lock:
         uploads_dir.mkdir(exist_ok=True)
 
     if file.filename is None:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="no filename"
+        )
 
-    # use team id, but for now just test with the uid
-    suffix = pathlib.Path(file.filename or "test.cpp").suffix
+    suffix = pathlib.Path(file.filename).suffix
+    if suffix not in allowed_file_extensions:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"file extension '{suffix}' is not allowed; only {str(allowed_file_extensions)} are allowed",
+        )
+
     team_fname = pathlib.Path(team_id + suffix)
 
     # joining paths
     file_path = uploads_dir / team_fname
+
+    # delete all other team files before writing to new file. this is atomic
+    await delete_file_with_stem(team_id)
 
     async with file_lock:
         # save the file to uploads directory
@@ -105,6 +126,8 @@ async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
 
 @submit_router.delete("/", responses=unauth_res)
 async def delete_file(user: User = Depends(verify_user)):
+    check_edit_access()
+
     team_id = get_team_id(user)
 
     if not uploads_dir.is_dir():
