@@ -6,10 +6,10 @@ from fastapi.responses import Response
 from gotrue import User
 import asyncio
 from src.util.auth import verify_user
-from src.util.models import unauth_res
+from src.util.models import unauth_res, SubmittedFile
 from src.util.supabase_client import db_client
 
-submit_router = APIRouter(prefix="/submit", tags=["submit"])
+submit_router = APIRouter(prefix="/submission", tags=["submission"])
 
 # all files are sitting in this dir, <team_id>.<cpp | py>
 uploads_dir = pathlib.Path("..", "poker_tournament_uploads").resolve()
@@ -33,6 +33,17 @@ def get_team_id(user: User):
     return str(team_id)
 
 
+# gets only the first one it sees. there should only be one.
+# returns fname, text content
+async def get_file_with_stem(stem: str) -> tuple[str, str] | None:
+    if uploads_dir.is_dir():
+        # lock before iterdir just in case. i dont wanna get anything messed up
+        async with file_lock:
+            for entry in uploads_dir.iterdir():
+                if entry.is_file() and entry.stem == stem:
+                    return entry.name, entry.read_text(encoding="utf-8")
+
+
 # deletes only the first one it sees. there should only be one.
 async def delete_file_with_stem(stem: str) -> str | None:
     if uploads_dir.is_dir():
@@ -43,6 +54,17 @@ async def delete_file_with_stem(stem: str) -> str | None:
                     fname = entry.name
                     entry.unlink()
                     return fname
+
+
+@submit_router.get("/", response_model=SubmittedFile, responses=unauth_res)
+async def get_submitted_file(user: User = Depends(verify_user)):
+    team_id = get_team_id(user)
+
+    result = await get_file_with_stem(team_id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    filename, content = result
+    return {"filename": filename, "content": content}
 
 
 # if re-upload a file, old file will get deleted!
@@ -81,7 +103,7 @@ async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
     return {"file_saved": team_fname}
 
 
-@submit_router.delete("/del", responses=unauth_res)
+@submit_router.delete("/", responses=unauth_res)
 async def delete_file(user: User = Depends(verify_user)):
     team_id = get_team_id(user)
 

@@ -17,6 +17,11 @@ unauth_res: dict[int | str, dict[str, str | Any]] = {
 no_content_res: dict[int | str, dict[str, str | Any]] = {status.HTTP_204_NO_CONTENT: {}}
 
 
+class SubmittedFile(BaseModel):
+    filename: str
+    content: str
+
+
 class Card(BaseModel):
     rank: int = Field(..., ge=1, le=13)
     suit: int = Field(..., ge=1, le=4)
