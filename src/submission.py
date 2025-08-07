@@ -133,14 +133,17 @@ async def delete_file(user: User = Depends(verify_user)):
     if not uploads_dir.is_dir():
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    team_fname = await delete_file_with_stem(team_id)
+
+    if team_fname is None:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    # file with team_id has been deleted! update db
     db_client.table("teams").update({"has_submitted_code": False}).eq(
         "id", team_id
     ).execute()
 
-    team_fname = await delete_file_with_stem(team_id)
-    if team_fname:
-        return {"file_deleted": team_fname}
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return {"file_deleted": team_fname}
 
     # if file.filename.endswith(".py"):
     #     process = subprocess.run(
