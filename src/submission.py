@@ -72,6 +72,10 @@ async def get_submitted_file(user: User = Depends(verify_user)):
 
     result = await get_file_with_stem(team_id)
     if result is None:
+        # set team.has_submitted_code to false, submitted code cannot be found
+        db_client.table("teams").update({"has_submitted_code": False}).eq(
+            "id", team_id
+        ).execute()
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     filename, content = result
     return {"filename": filename, "content": content}
