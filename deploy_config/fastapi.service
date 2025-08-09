@@ -1,0 +1,14 @@
+[Unit]
+    Description=fastapi
+    After=network.target
+
+[Service]
+    User=solunian
+    Group=root
+    WorkingDirectory=/home/solunian/poker-tournament-backend
+    ExecStart=/home/solunian/poker-tournament-backend/.venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8000
+    Restart=always
+    RestartSec=10
+
+[Install]
+    WantedBy=multi-user.target

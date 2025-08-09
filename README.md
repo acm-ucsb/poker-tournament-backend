@@ -1,4 +1,4 @@
-# 35.212.235.70:8000
+# https://poker-backend.ddns.net/docs
 
 ## installation
 
