@@ -18,3 +18,6 @@ tests/output/
 
 # Environment variables
 .env
+
+# macbook
+.DS_Store
