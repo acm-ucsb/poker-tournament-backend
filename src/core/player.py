@@ -1,4 +1,19 @@
+from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel
 from src.core.card import Card
+
+class ActionType(Enum):
+    FOLD = 0
+    CHECK = 1
+    CALL = 2
+    BET = 3
+    RAISE = 4
+
+class Action(BaseModel):
+    action: ActionType
+    amount: Optional[int] = None
 
 class Player:
     def __init__(self, player_id: str, starting_chips: int = 0):
@@ -26,3 +41,6 @@ class Player:
     def new_round(self):
         self.new_hand()
         self.total_contributed = 0
+        
+    def act(self) -> Action:
+        ...
