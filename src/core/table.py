@@ -12,10 +12,14 @@ class Table:
         table_id: str,
         max_table_size: int = 8,
         min_table_size: int = 5,
+        initial_bind_amount: tuple[int, int] = (10, 30),
     ):
         self.id: str = table_id
         self.seating: list[Player | None] = [None] * max_table_size
         self.min_table_size = min_table_size
+        
+        self.blind_amount: tuple[int, int] = initial_bind_amount
+        self.button: int = 0
         
     @property
     def players(self) -> list[Player]:
@@ -24,6 +28,30 @@ class Table:
     @property
     def size(self) -> int:
         return len(self.players)
+    
+    @property
+    def blinds(self) -> tuple[int, int]:
+        """Gets the index of big blind and small blind
+        Returns: A tuple of (small_blind, big_blind)
+        """
+        n = len(self.seating)
+        small_blind = (self.button + 1) % n
+        while self.seating[small_blind] == None:
+            small_blind = (small_blind + 1) % n
+        
+        big_blind = (self.button + 1) % n
+        while self.seating[big_blind] == None:
+            big_blind = (big_blind + 1) % n
+        
+        return (small_blind, big_blind)
+    
+    @property
+    def small_blind(self) -> int:
+        return self.blinds[0]
+    
+    @property
+    def big_blind(self) -> int:
+        return self.blinds[1]
     
     def close(self):
         # close all broadcasting channels and clean up any remaining resources
