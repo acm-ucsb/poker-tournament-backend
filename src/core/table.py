@@ -1,5 +1,6 @@
 from random import randint
 
+from src.core.card import Deck, Card
 from src.core.player import Player
 
 class Table:
@@ -17,6 +18,9 @@ class Table:
         self.id: str = table_id
         self.seating: list[Player | None] = [None] * max_table_size
         self.min_table_size = min_table_size
+        
+        self.deck = Deck()
+        self.community_cards: list[Card] = []
         
         self.blind_amount: tuple[int, int] = initial_bind_amount
         self.button: int = 0
@@ -52,6 +56,34 @@ class Table:
     @property
     def big_blind(self) -> int:
         return self.blinds[1]
+    
+    def start_hand(self):
+        # resetting everything
+        self.deck.reset()
+        self.community_cards.clear()
+        # TODO: reset pot
+        
+        for player in self.players:
+            player.new_hand()
+            
+        # deal cards to players
+        # TODO: check how to deal cards to players?
+        for _ in range(2):
+            for player in self.players:
+                player.hand.append(self.deck.deal_card())
+        
+        # TODO: force blinds to post
+    
+    # clean up after the last round
+    def end_hand(self):
+        # TODO: determine the winner
+        # TODO: distribute pot
+        # TODO: determine if player gets eliminated and notify matchmaking
+        
+        # move the button
+        self.button = (self.button + 1) % len(self.seating)
+        while self.seating[self.button] == None:
+            self.button = (self.button + 1) % len(self.seating)
     
     def close(self):
         # close all broadcasting channels and clean up any remaining resources
