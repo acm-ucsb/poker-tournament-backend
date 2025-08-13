@@ -1,3 +1,4 @@
+from math import floor, ceil
 from random import randint
 
 from src.core.card import Deck, Card
@@ -24,6 +25,8 @@ class Table:
         
         self.blind_amount: tuple[int, int] = initial_bind_amount
         self.button: int = 0
+        
+        self.pot: int = 0
         
     @property
     def players(self) -> list[Player]:
@@ -57,11 +60,29 @@ class Table:
     def big_blind(self) -> int:
         return self.blinds[1]
     
+    def payout(self, winners: list[Player]) -> int:
+        # precondition: winners are sorted by ascending contribution
+        winners.sort(key=lambda player: player.contribution)
+        
+        # TODO: test this logic, but it should work
+        total_paid = 0
+        n = len(winner)
+        for i, winner in enumerate(winners):
+            eligible_amount = sum([min(winner.contribution, player.contribution) for player in self.players])
+            payout = (eligible_amount - total_paid) / (n - i)
+            total_paid += payout
+            self.pot -= floor(payout)
+            winner.chips += floor(payout)
+        
+        # TODO: give the indivisible chip to first winner to the left of the button
+        if ceil(total_paid) - floor(total_paid) == 1:
+            ...
+    
     def start_hand(self):
         # resetting everything
         self.deck.reset()
         self.community_cards.clear()
-        # TODO: reset pot
+        self.pot = 0
         
         for player in self.players:
             player.new_hand()
@@ -72,7 +93,13 @@ class Table:
             for player in self.players:
                 player.hand.append(self.deck.deal_card())
         
-        # TODO: force blinds to post
+        # force blinds to post
+        blinds_idx = self.blinds
+        sb, bb = self.seating[blinds_idx[0]], self.seating[blinds_idx[1]]
+        sb_amount, bb_amount = self.blind_amount
+        
+        self.pot += sb.force_bet(sb_amount)
+        self.pot += bb.force_bet(bb_amount)
     
     # clean up after the last round
     def end_hand(self):
