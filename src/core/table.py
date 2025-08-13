@@ -60,7 +60,7 @@ class Table:
     def big_blind(self) -> int:
         return self.blinds[1]
     
-    def payout(self, winners: list[Player]) -> int:
+    def payout(self, winners: list[Player]) -> None:
         # precondition: winners are sorted by ascending contribution
         winners.sort(key=lambda player: player.contribution)
         
@@ -74,9 +74,13 @@ class Table:
             self.pot -= floor(payout)
             winner.chips += floor(payout)
         
-        # TODO: give the indivisible chip to first winner to the left of the button
+        # give the indivisible chip to first winner to the left of the button
         if ceil(total_paid) - floor(total_paid) == 1:
-            ...
+            target = (self.button + 1) % len(self.seating)
+            while self.seating[target] == None or self.seating[target] not in winners:
+                target = (self.button + 1) % len(self.seating)
+                
+            self.seating[target].chips += 1
     
     def start_hand(self):
         # resetting everything
