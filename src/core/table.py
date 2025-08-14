@@ -67,18 +67,24 @@ class Table:
         # precondition: winners are sorted by ascending contribution
         winners.sort(key=lambda player: player.contribution)
         total_paid = paid
+        has_indivisible = False
         
         n = len(winners)
         for i, winner in enumerate(winners):
-            # TODO: fix logic, there's an extra chip due to rounding issue
             eligible_amount = sum([min(winner.contribution, player.contribution) for player in self.players])
             payout = max(min(eligible_amount - total_paid, self.pot) / (n - i), 0)
+            
+            if ceil(payout) > payout:
+                has_indivisible = True
+                
+            payout = floor(payout)
+                
             total_paid += payout
-            self.pot -= floor(payout)
-            winner.chips += floor(payout)
+            self.pot -= payout
+            winner.chips += payout
         
         # give the indivisible chip to first winner to the left of the button
-        if ceil(total_paid) - floor(total_paid) == 1:
+        if has_indivisible:
             target = (self.button + 1) % len(self.seating)
             while self.seating[target] == None or self.seating[target] not in winners:
                 target = (target + 1) % len(self.seating)
