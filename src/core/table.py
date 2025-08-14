@@ -46,7 +46,7 @@ class Table:
         while self.seating[small_blind] == None:
             small_blind = (small_blind + 1) % n
         
-        big_blind = (self.button + 1) % n
+        big_blind = (small_blind + 1) % n
         while self.seating[big_blind] == None:
             big_blind = (big_blind + 1) % n
         
@@ -60,16 +60,19 @@ class Table:
     def big_blind(self) -> int:
         return self.blinds[1]
     
-    def payout(self, winners: list[Player]) -> None:
+    def payout(self, winners: list[Player], paid = 0) -> int:
+        """Distribute the pot to winners according to their contribution.
+        Returns: The amount paid to all the winners
+        """
         # precondition: winners are sorted by ascending contribution
         winners.sort(key=lambda player: player.contribution)
+        total_paid = paid
         
-        # TODO: test this logic, but it should work
-        total_paid = 0
-        n = len(winner)
+        n = len(winners)
         for i, winner in enumerate(winners):
+            # TODO: fix logic, there's an extra chip due to rounding issue
             eligible_amount = sum([min(winner.contribution, player.contribution) for player in self.players])
-            payout = (eligible_amount - total_paid) / (n - i)
+            payout = max(min(eligible_amount - total_paid, self.pot) / (n - i), 0)
             total_paid += payout
             self.pot -= floor(payout)
             winner.chips += floor(payout)
@@ -78,9 +81,11 @@ class Table:
         if ceil(total_paid) - floor(total_paid) == 1:
             target = (self.button + 1) % len(self.seating)
             while self.seating[target] == None or self.seating[target] not in winners:
-                target = (self.button + 1) % len(self.seating)
+                target = (target + 1) % len(self.seating)
                 
             self.seating[target].chips += 1
+
+        return total_paid - paid
     
     def start_hand(self):
         # resetting everything
@@ -130,7 +135,7 @@ class Table:
         vacant = []
         n = len(self.seating)
         for i in range(start, n + start):
-            if self.seating[i % n] != None:
+            if self.seating[i % n] == None:
                 vacant.append(i % n)
         
         return vacant[::-1]
