@@ -3,9 +3,8 @@ from queue import PriorityQueue
 
 from .table import Table
 from .player import Player
-from .signaling import EventNotifier, SignalType
 
-class Matchmaking(EventNotifier):
+class Matchmaking:
     def __init__(self):
         self.tables: list[Table] = []
         self.players: list[Player] = []
@@ -17,38 +16,31 @@ class Matchmaking(EventNotifier):
         super().__init__()
     
     # TODO: finish this manual override request
-    def _on_player_elimination(self) -> None:
+    def _on_player_elimination(self, _ = None) -> None:
         if not self.determine_reassign():
             return
         
-        # Stop game
-        self.notify(SignalType.REQUEST_STOP_GAME.value)
+        # TODO: Stop game
         
         # TODO: add a wait for all games to stop
-        
         self.remove_eliminated_players()
         
         try:
             self.reassign_table()
         except ValueError:
-            self.notify(SignalType.TABLE_REASSIGNMENT_ERROR.value)
+            # TODO: notify table rebalancing error
             # Ask for manual override
             self.reassign_table_manual()
         
         self.close_unused_tables()
         
-        # Resume game
-        self.notify(SignalType.REQUEST_RESUME_GAME.value)
-        
-    def signal_listener(self, signal: SignalType):
-        if signal.value == SignalType.PLAYER_ELIMINATED.value:
-            self._on_player_elimination()
+        # TODO: Resume game
     
     def remove_eliminated_players(self) -> None:
         players = []
         
         for player in self.players:
-            if player.eliminated:
+            if player.is_eliminated:
                 # write to db that player is eliminated
                 ...
             else:
@@ -112,13 +104,13 @@ class Matchmaking(EventNotifier):
             self.tables[i % num_tables].add_player(player)
             
         for table in self.tables:
-            table.subscribe(self.signal_listener)
+            self._subscribe_to(table)
         
         return self.tables
     
     def assign_table_manual(self, tables: list[Table]) -> list[Table]:
         for table in tables:
-            table.subscribe(self.signal_listener)
+            self._subscribe_to(table)
             self.tables.append(table)
         
         return self.tables
