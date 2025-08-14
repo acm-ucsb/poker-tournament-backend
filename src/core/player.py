@@ -22,25 +22,34 @@ class Player:
         
         self.hand: list[Card] = []
         
-        self.is_all_in: bool = False
+        self.is_eliminated: bool = False
         self.has_folded: bool = False
         
-        self.contribution: int = 0          # chips in current betting round
-        self.total_contributed: int = 0     # chips contributed in whole hand
-        
+        self.contribution: int = 0
+    
     @property
-    def is_eliminated(self):
-        return self.chips <= 0
+    def is_all_in(self):
+        return self.chips == 0
     
     def new_hand(self):
         self.hand = []
         self.is_all_in = False
         self.has_folded = False
         self.contribution = 0
-    
-    def new_round(self):
-        self.new_hand()
-        self.total_contributed = 0
         
     def act(self) -> Action:
         ...
+        
+    def force_bet(self, amount: int) -> int:
+        """Force player to bet `amount`, if not possible player goes all in.
+        Returns: Amount player actually contributed.
+        """
+        if amount >= self.chips:
+            contribution = self.chips
+            self.chips = 0
+            self.contribution += contribution
+            return contribution
+        
+        self.chips -= amount
+        self.contribution += amount
+        return amount
