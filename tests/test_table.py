@@ -77,3 +77,16 @@ def test_payout():
     assert table.players[1].chips == 1200
     assert table.players[2].chips == 0
     assert table.players[3].chips == 1000
+    
+    table, _ = init_table()
+    table.players[0].contribution = 100
+    table.players[1].contribution = 100
+    table.players[2].contribution = 100
+    table.players[3].contribution = 100
+    table.pot = 400
+    
+    assert table.payout([table.players[0], table.players[1], table.players[3]]) == 400
+    assert table.players[0].chips == 133
+    assert table.players[1].chips == 1134
+    assert table.players[2].chips == 0
+    assert table.players[3].chips == 1133

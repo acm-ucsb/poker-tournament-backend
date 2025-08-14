@@ -77,6 +77,9 @@ class Table:
             if ceil(payout) > payout:
                 has_indivisible = True
                 
+            if has_indivisible and n - i == 1:
+                payout -= 1
+                
             payout = floor(payout)
                 
             total_paid += payout
@@ -90,6 +93,7 @@ class Table:
                 target = (target + 1) % len(self.seating)
                 
             self.seating[target].chips += 1
+            total_paid += 1
 
         return total_paid - paid
     
