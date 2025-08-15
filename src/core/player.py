@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel
-from src.core.card import Card
+from pydantic import BaseModel, Field
+from src.core.card import Card, RANK, SUIT
 
 class ActionType(Enum):
     FOLD = 0
@@ -14,6 +14,14 @@ class ActionType(Enum):
 class Action(BaseModel):
     action: ActionType
     amount: Optional[int] = None
+    
+class PlayerData(BaseModel):
+    player_id: str = Field(serialization_alias="player-id")
+    hand: list[str]
+    chips: int
+    has_folded: bool = Field(serialization_alias="has-folded")
+    is_all_in: bool = Field(serialization_alias="is-all-in")
+    pot_contribution: int = Field(serialization_alias="pot-contribution")
 
 class Player:
     def __init__(self, player_id: str, starting_chips: int = 0):
@@ -30,6 +38,17 @@ class Player:
     @property
     def is_all_in(self):
         return self.chips == 0
+
+    @property
+    def data(self) -> PlayerData:
+        return PlayerData(
+            player_id=self.id,
+            hand=[RANK[card.rank] + SUIT[card.suit] for card in self.hand],
+            chips=self.chips,
+            has_folded=self.has_folded,
+            is_all_in=self.is_all_in,
+            pot_contribution=self.contribution,
+        )
     
     def new_hand(self):
         self.hand = []

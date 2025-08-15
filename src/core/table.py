@@ -1,8 +1,29 @@
 from math import floor, ceil
 from random import randint
+from typing import Literal
 
-from src.core.card import Deck, Card
-from src.core.player import Player
+from pydantic import BaseModel, Field
+
+from src.core.broadcasting import BroadcastChannel
+from src.core.card import Deck, Card, RANK, SUIT
+from src.core.player import Player, PlayerData
+
+class TableData(BaseModel):
+    table_id: str = Field(serialization_alias="table-id")
+    players: list[PlayerData]
+    seating: list[str | None]
+    current_player: str = Field(serialization_alias="current-player")
+    
+    button: int
+    small_blind: int = Field(serialization_alias="small-blind")
+    big_blind: int = Field(serialization_alias="big-blind")
+    
+    pot: int
+    current_call: int = Field(serialization_alias="call-amount")
+    community_cards: list[str] = Field(serialization_alias="community-card")
+
+class TableUpdateData(BaseModel):
+    ...
 
 class Table:
     """
@@ -27,6 +48,8 @@ class Table:
         self.button: int = 0
         
         self.pot: int = 0
+        
+        self.broadcaster = BroadcastChannel()
         
     @property
     def players(self) -> list[Player]:
@@ -59,6 +82,25 @@ class Table:
     @property
     def big_blind(self) -> int:
         return self.blinds[1]
+
+    @property
+    def data(self) -> TableData:
+        return TableData(
+            table_id=self.id,
+            players=[player.data for player in self.players],
+            seating=[seat.id if seat else None for seat in self.seating],
+            current_player=...,
+            button=self.button,
+            small_blind=self.small_blind,
+            big_blind=self.big_blind,
+            pot=self.pot,
+            current_call=...,
+            community_cards=[RANK[card.rank] + SUIT[card.suit] for card in self.community_cards]
+        )
+    
+    def notify_broadcaster(self) -> None:
+        # TODO: implement the update log
+        self.broadcaster.update(self.data, ...)
     
     def payout(self, winners: list[Player], paid = 0) -> int:
         """Distribute the pot to winners according to their contribution.

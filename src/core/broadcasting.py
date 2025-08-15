@@ -48,4 +48,9 @@ class BroadcastChannel:
         self.connections = [connection for connection in self.connections if connection not in disconnected]
         
     def update(self, state: TableData, update: TableUpdateData):
-        asyncio.create_task(self._broadcast("Game state changed!"))
+        msg = {
+            "current-state": state.model_dump(mode="json", by_alias=True),
+            "update-log": update.model_dump(mode="json", by_alias=True),
+        }
+        
+        asyncio.create_task(self._broadcast(msg))
