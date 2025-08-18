@@ -1,12 +1,12 @@
 from math import floor, ceil
 from random import randint
-from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from src.core.broadcasting import BroadcastChannel
 from src.core.card import Deck, Card, RANK, SUIT
 from src.core.player import Player, PlayerData
+from src.core import update
 
 class TableData(BaseModel):
     table_id: str = Field(serialization_alias="table-id")
@@ -21,9 +21,6 @@ class TableData(BaseModel):
     pot: int
     current_call: int = Field(serialization_alias="call-amount")
     community_cards: list[str] = Field(serialization_alias="community-card")
-
-class TableUpdateData(BaseModel):
-    ...
 
 class Table:
     """
@@ -98,9 +95,8 @@ class Table:
             community_cards=[RANK[card.rank] + SUIT[card.suit] for card in self.community_cards]
         )
     
-    def notify_broadcaster(self) -> None:
-        # TODO: implement the update log
-        self.broadcaster.update(self.data, ...)
+    def notify_broadcaster(self, update_code: update.UpdateCode, payload: update.BasePayload) -> None:
+        self.broadcaster.update(self.data, update.UpdateData(code=update_code, payload=payload))
     
     def payout(self, winners: list[Player], paid = 0) -> int:
         """Distribute the pot to winners according to their contribution.
