@@ -24,7 +24,7 @@ async def get_submission_by_team_id(team_id: str, user: User = Depends(verify_us
     try:
         table_res = (
             db_client.table("teams")
-            .select("has_submitted_code", "name")
+            .select("has_submitted_code")
             .eq("id", team_id)
             .single()
             .execute()
