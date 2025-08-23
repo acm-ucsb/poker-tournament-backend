@@ -1,0 +1,43 @@
+from fastapi import Depends, APIRouter, HTTPException, status
+from gotrue import User
+from src.util.models import unauth_res, SubmittedFile
+from src.util.auth import verify_user
+from src.util.supabase_client import db_client
+
+# this route imports this specific code from another route
+from src.submission import get_file_with_stem
+
+admin_router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@admin_router.get("/submission", response_model=SubmittedFile, responses=unauth_res)
+async def get_team_submission_by_team_id(
+    team_id: str, user: User = Depends(verify_user)
+):
+    is_admin_res = (
+        db_client.table("users").select("is_admin").eq("id", user.id).single().execute()
+    )
+
+    if not is_admin_res.data["is_admin"]:
+        raise HTTPException(401, detail="user is not admin")
+
+    table_res = (
+        db_client.table("teams")
+        .select("has_submitted_code", "name")
+        .eq("id", team_id)
+        .single()
+        .execute()
+    )
+
+    if table_res.data["has_submitted_code"]:
+        result = await get_file_with_stem(team_id)
+        if result:
+            filename, content = result
+            return {"filename": filename, "content": content}
+        else:
+            # set team.has_submitted_code to false, submitted code cannot be found
+            db_client.table("teams").update({"has_submitted_code": False}).eq(
+                "id", team_id
+            ).execute()
+
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
