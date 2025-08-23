@@ -11,7 +11,7 @@ from src.submission import get_file_with_stem
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-@admin_router.get("/submission", response_model=SubmittedFile, responses=unauth_res)
+@admin_router.get("/submission/", response_model=SubmittedFile, responses=unauth_res)
 async def get_submission_by_team_id(team_id: str, user: User = Depends(verify_user)):
     is_admin_res = (
         db_client.table("users").select("is_admin").eq("id", user.id).single().execute()
