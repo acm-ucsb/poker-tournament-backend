@@ -1,5 +1,6 @@
 # import os
 # import subprocess
+import datetime
 import pathlib
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.responses import Response
@@ -20,9 +21,27 @@ uploads_dir = pathlib.Path("..", "poker_tournament_uploads").resolve()
 file_lock = asyncio.Lock()
 
 
-# TODO: should check game state of tournament. if active, should not allow edit access
 def check_edit_access():
     can_users_edit = True
+
+    # hardcoded tournament id to check submission deadline
+    res = (
+        db_client.table("tournaments")
+        .select("submissions_deadline")
+        .eq("id", "f6fd507b-42fb-4fba-a0d3-e9ded05aeca5")
+        .single()
+        .execute()
+    )
+
+    submission_deadline = datetime.datetime.strptime(
+        res.data["submissions_deadline"], "%Y-%m-%dT%H:%M:%S%z"
+    )
+
+    # users can edit if current time < deadline
+    can_users_edit = (
+        datetime.datetime.now(tz=datetime.timezone.utc) < submission_deadline
+    )
+
     if not can_users_edit:
         raise HTTPException(
             status_code=403, detail="files cannot be updated at this time"
