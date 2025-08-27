@@ -4,9 +4,7 @@ from postgrest import APIError
 from src.util.models import unauth_res, SubmittedFile
 from src.util.auth import verify_user
 from src.util.supabase_client import db_client
-
-# this route imports this specific code from another route
-from src.submission import get_file_with_stem
+import src.util.helpers as helpers
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -31,7 +29,7 @@ async def get_submission_by_team_id(team_id: str, user: User = Depends(verify_us
         )
 
         if table_res.data["has_submitted_code"]:
-            result = await get_file_with_stem(team_id)
+            result = await helpers.get_file_with_stem(team_id)
 
             if result:
                 filename, content = result
