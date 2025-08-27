@@ -2,22 +2,20 @@ from fastapi import Depends, APIRouter, HTTPException, status
 from gotrue import User
 from postgrest import APIError
 from src.util.models import unauth_res, SubmittedFile
-from src.util.auth import verify_user
+from src.util.auth import verify_admin_user
 from src.util.supabase_client import db_client
 import src.util.helpers as helpers
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+@admin_router.get("/test/", response_model=str)
+def is_admin(_: User = Depends(verify_admin_user)):
+    return "user is admin. would raise exception otherwise."
+
+
 @admin_router.get("/submission/", response_model=SubmittedFile, responses=unauth_res)
-async def get_submission_by_team_id(team_id: str, user: User = Depends(verify_user)):
-    is_admin_res = (
-        db_client.table("users").select("is_admin").eq("id", user.id).single().execute()
-    )
-
-    if not is_admin_res.data["is_admin"]:
-        raise HTTPException(401, detail="user is not admin")
-
+async def get_submission_by_team_id(team_id: str, _: User = Depends(verify_admin_user)):
     # team_id is not guaranteed to exist!
     try:
         table_res = (
