@@ -46,7 +46,7 @@ class Table:
         
         self.current_player: Player | None = None # makes it easier to keep track of players because 
             # folding removes players form the active player list
-        self.last_player_to_raise: Player | None = None # big blind starts the betting round
+        self.last_player_to_raise: Player | None = None # small blind starts the betting round
         self.current_call: int = 0
         
         self.broadcaster = BroadcastChannel()
@@ -93,7 +93,7 @@ class Table:
             table_id=self.id,
             players=[player.data for player in self.players],
             seating=[seat.id if seat else None for seat in self.seating],
-            current_player=self.current_player if self.current_player else None, # added as failsafe
+            current_player=self.current_player.id if self.current_player else "", # added as failsafe
             button=self.button,
             small_blind=self.small_blind,
             big_blind=self.big_blind,
@@ -189,15 +189,15 @@ class Table:
                 player.is_eliminated = True
                 # remove player from table
                 self.seating[self.seating.index(player)] = None
-                # TODO: noticy matchmaking and broadcast channel
+                # TODO: notify matchmaking and broadcast channel
             else: # reset player state
                 player.has_folded = False
                 player.contribution = 0
                 player.hand = []
                 
-        # notify matchmaking of eliminated players from "master" matchmaking object 
-        # assuming matchmaking object is the one that created this table 
-        #   -> some static variable in Table class for callback?
+        # TODO : notify matchmaking of eliminated players from "master" matchmaking object 
+            # assuming matchmaking object is the one that created this table 
+            #   -> some static variable in Table class for callback?
 
 
         # move the button
@@ -223,7 +223,7 @@ class Table:
         if only one active player remains, end the hand
         need a raise variable to check how much to call
         """
-        # TODO: implement pre-flop
+        # blinds
         self.betting_round(self.step.active_players, after_big)
         # only one player remaining
         if len([player for player in self.step.active_players if not player.has_folded]) == 1:
