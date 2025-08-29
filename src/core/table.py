@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from src.core.broadcasting import BroadcastChannel
 from src.core.card import Deck, Card, RANK, SUIT
-from src.core.player import Player, PlayerData
+from src.core.player import Player, PlayerData, ActionType
 from src.core import update
 
 class TableData(BaseModel):
@@ -44,10 +44,15 @@ class Table:
         self.blind_amount: tuple[int, int] = initial_bind_amount
         self.button: int = 0
         
-        self.pot: int = 0
+        self.current_player: int = 0
+        self.last_player_to_raise
+        self.current_call: int = 0
         
         self.broadcaster = BroadcastChannel()
         
+        self.pot: int = 0
+    
+    # TODO: refactor to only recompute when seating changes
     @property
     def players(self) -> list[Player]:
         return [player for player in self.seating if player]
@@ -56,6 +61,7 @@ class Table:
     def size(self) -> int:
         return len(self.players)
     
+    #TODO: refactor to only recompute when the button or seating changes
     @property
     def blinds(self) -> tuple[int, int]:
         """Gets the index of big blind and small blind
@@ -100,7 +106,8 @@ class Table:
     
     def payout(self, winners: list[Player], paid = 0) -> int:
         """Distribute the pot to winners according to their contribution.
-        Returns: The amount paid to all the winners
+        Returns:
+            int: The amount paid to all the winners.
         """
         # precondition: winners are sorted by ascending contribution
         winners.sort(key=lambda player: player.contribution)
@@ -157,6 +164,9 @@ class Table:
         
         self.pot += sb.force_bet(sb_amount)
         self.pot += bb.force_bet(bb_amount)
+        
+        self.current_call = bb_amount
+        self.current_player = self.players.index(bb) + 1
     
     # clean up after the last round
     def end_hand(self):
@@ -169,11 +179,54 @@ class Table:
         while self.seating[self.button] == None:
             self.button = (self.button + 1) % len(self.seating)
     
+    def step(self):
+        # TODO: check if start of hand
+        if ...:
+            self.step.active_players = self.players
+        
+        
+        # TODO: implement pre-flop
+        
+        # TODO: implement post-flop
+        
+        # TODO: implement post-turn
+        
+        # TODO: implement post-river
+        
+        current_player = self.players[self.current_player]
+        action = current_player.act()
+        
+        # TODO: handles different action types
+        match action.action:
+            case ActionType.CHECK:
+                ...
+            case ActionType.CALL:
+                self.pot += action.amount
+            case ActionType.FOLD:
+                self.step.active_players.remove(current_player)
+            case ActionType.RAISE:
+                self.pot += action.amount
+                self.current_call = current_player.contribution
+            
+        
+        # betting within a round continues until every active player has either
+            # Matched the highest bet (called),
+            # Raised again (which reopens betting for others), or
+            # Folded.
+        
+        
+        
+        self.current_player = (self.current_player + 1) % len(self.players)
+        
+        # TODO: check if end of hand
+        if ...:
+            ...
+    
+    
     def close(self):
         # close all broadcasting channels and clean up any remaining resources
         ...
     
-    # TODO: test
     def get_vacant(self) -> list[int]:
         """Calculate all vacant seating values based on how far they are from being a BB
         Returns:
@@ -215,7 +268,6 @@ class Table:
         for player, seat in zip(players, vacant):
             self.seating[seat] = player
     
-    # TODO: test
     def remove_random_player(self) -> Player:
         """
         Raises:
@@ -230,7 +282,6 @@ class Table:
         
         return selected
     
-    # TODO: test
     def remove_random_players(self, n: int) -> list[Player]:
         """
         Args:
