@@ -45,7 +45,7 @@ class Table:
         self.button: int = 0
         
         self.current_player: int = 0
-        self.last_player_to_raise
+        self.last_player_to_raise: int = 1 # big blind starts the betting round
         self.current_call: int = 0
         
         self.broadcaster = BroadcastChannel()
@@ -92,7 +92,7 @@ class Table:
             table_id=self.id,
             players=[player.data for player in self.players],
             seating=[seat.id if seat else None for seat in self.seating],
-            current_player=...,
+            current_player=self.seating[self.current_player].id if self.seating[self.current_player] else None, # added as failsafe
             button=self.button,
             small_blind=self.small_blind,
             big_blind=self.big_blind,
@@ -171,9 +171,28 @@ class Table:
     # clean up after the last round
     def end_hand(self):
         # TODO: determine the winner
-        # TODO: distribute pot
-        # TODO: determine if player gets eliminated and notify matchmaking
+        strengths = [(player, self.deck.hand_stength(player.hand + self.community_cards)) \
+                     for player in self.players if not (player ==  None) and not player.has_folded]
         
+        strengths.sort(key=lambda x: x[1], reverse=True)
+        highest_strength = strengths[0][1]
+        winners = [player for player, strength in strengths if strength == highest_strength]    
+        # TODO: distribute pot
+        self.payout(winners)
+        # TODO: determine if player gets eliminated and notify matchmaking
+        for player in self.seating:
+            if player == None:
+                continue
+            if player.chips == 0:
+                player.is_eliminated = True
+                # remove player from table
+                self.seating[self.seating.index(player)] = None
+
+            
+                
+        # notify matchmaking of eliminated players from "master" matchmaking object 
+        # assuming matchmaking object is the one that created this table 
+        #   -> some static variable in Table class for callback?
         # move the button
         self.button = (self.button + 1) % len(self.seating)
         while self.seating[self.button] == None:
@@ -184,7 +203,13 @@ class Table:
         if ...:
             self.step.active_players = self.players
         
-        
+        """
+        each betting round starts from first active player starting from little blind 
+        to check if betting has ended:
+            if current player is last player to raise and all other active players have called:
+        if only one active player remains, end the hand
+        need a raise variable to check how much to call
+        """
         # TODO: implement pre-flop
         
         # TODO: implement post-flop
@@ -277,10 +302,11 @@ class Table:
             raise IndexError("No more player left to remove")
         
         players = self.players
-        selected = players[randint(0, len(players))]
-        self.seating.remove(selected)
+        selected = randint(0, len(players))
+        player = players[selected]
+        self.seating[(selected)] = None # need to change to None, not remove altogether
         
-        return selected
+        return player
     
     def remove_random_players(self, n: int) -> list[Player]:
         """

@@ -42,6 +42,7 @@ class Matchmaking:
         for player in self.players:
             if player.is_eliminated:
                 # write to db that player is eliminated
+                # also need to remove player from any table they are in
                 ...
             else:
                 players.append(player)
