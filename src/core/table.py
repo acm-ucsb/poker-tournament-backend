@@ -44,8 +44,9 @@ class Table:
         self.blind_amount: tuple[int, int] = initial_bind_amount
         self.button: int = 0
         
-        self.current_player: int = 0
-        self.last_player_to_raise: int = 1 # big blind starts the betting round
+        self.current_player: Player | None = None # makes it easier to keep track of players because 
+            # folding removes players form the active player list
+        self.last_player_to_raise: Player | None = None # big blind starts the betting round
         self.current_call: int = 0
         
         self.broadcaster = BroadcastChannel()
@@ -92,12 +93,12 @@ class Table:
             table_id=self.id,
             players=[player.data for player in self.players],
             seating=[seat.id if seat else None for seat in self.seating],
-            current_player=self.seating[self.current_player].id if self.seating[self.current_player] else None, # added as failsafe
+            current_player=self.current_player if self.current_player else None, # added as failsafe
             button=self.button,
             small_blind=self.small_blind,
             big_blind=self.big_blind,
             pot=self.pot,
-            current_call=...,
+            current_call=self.current_call,
             community_cards=[RANK[card.rank] + SUIT[card.suit] for card in self.community_cards]
         )
     
@@ -166,19 +167,20 @@ class Table:
         self.pot += bb.force_bet(bb_amount)
         
         self.current_call = bb_amount
-        self.current_player = self.players.index(bb) + 1
+        self.current_player = sb
+        self.last_player_to_raise = None # place holder to indicate start of round
     
     # clean up after the last round
     def end_hand(self):
         # TODO: determine the winner
         strengths = [(player, self.deck.hand_stength(player.hand + self.community_cards)) \
-                     for player in self.players if not (player ==  None) and not player.has_folded]
+                     for player in self.players if  not player.has_folded]
         
         strengths.sort(key=lambda x: x[1], reverse=True)
         highest_strength = strengths[0][1]
         winners = [player for player, strength in strengths if strength == highest_strength]    
-        # TODO: distribute pot
-        self.payout(winners)
+        # payout the winners
+        _ = self.payout(winners)
         # TODO: determine if player gets eliminated and notify matchmaking
         for player in self.seating:
             if player == None:
@@ -187,22 +189,33 @@ class Table:
                 player.is_eliminated = True
                 # remove player from table
                 self.seating[self.seating.index(player)] = None
-
-            
+                # TODO: noticy matchmaking and broadcast channel
+            else: # reset player state
+                player.has_folded = False
+                player.contribution = 0
+                player.hand = []
                 
         # notify matchmaking of eliminated players from "master" matchmaking object 
         # assuming matchmaking object is the one that created this table 
         #   -> some static variable in Table class for callback?
+
+
         # move the button
         self.button = (self.button + 1) % len(self.seating)
         while self.seating[self.button] == None:
             self.button = (self.button + 1) % len(self.seating)
+
+        self.current_player = self.seating[self.button]
     
+    #TODO: test
     def step(self):
-        # TODO: check if start of hand
-        if ...:
-            self.step.active_players = self.players
+        self.start_hand()
+        self.step.active_players = self.players
         
+        # all players in at this point, so don't have to check for folded players
+        start = self.step.active_players.index(self.current_player) # rounds start from small blind
+        # flop starts from after big blind
+        after_big = (self.step.active_players.index(self.current_player) + 2) % len(self.step.active_players)
         """
         each betting round starts from first active player starting from little blind 
         to check if betting has ended:
@@ -211,41 +224,86 @@ class Table:
         need a raise variable to check how much to call
         """
         # TODO: implement pre-flop
+        self.betting_round(self.step.active_players, after_big)
+        # only one player remaining
+        if len([player for player in self.step.active_players if not player.has_folded]) == 1:
+            self.end_hand()
+            return
         
-        # TODO: implement post-flop
+        # flop
+        _ = self.deck.deal_card() # burn
+        self.community_cards.extend([self.deck.deal_card() for _ in range(3)])
+        while self.step.active_players[start].has_folded:
+            start = (start + 1) % len(self.step.active_players) # next active player past small blind
+       
+        self.betting_round(self.step.active_players, start) # start from first active player from small blind
+        if len([player for player in self.step.active_players if not player.has_folded]) == 1:
+            self.end_hand()
+            return
         
-        # TODO: implement post-turn
+        # turn
+        _ = self.deck.deal_card() # burn
+        self.community_cards.append(self.deck.deal_card())
+        while self.step.active_players[start].has_folded:
+            start = (start + 1) % len(self.step.active_players) # next active player past small blind
         
-        # TODO: implement post-river
+        self.betting_round(self.step.active_players, start)
+        if len([player for player in self.step.active_players if not player.has_folded]) == 1:
+            self.end_hand()
+            return
         
-        current_player = self.players[self.current_player]
-        action = current_player.act()
+        #river
+        _ = self.deck.deal_card() # burn
+        self.community_cards.append(self.deck.deal_card())
+        while self.step.active_players[start].has_folded:
+            start = (start + 1) % len(self.step.active_players) # next active player past big blind
         
-        # TODO: handles different action types
-        match action.action:
-            case ActionType.CHECK:
-                ...
-            case ActionType.CALL:
-                self.pot += action.amount
-            case ActionType.FOLD:
-                self.step.active_players.remove(current_player)
-            case ActionType.RAISE:
-                self.pot += action.amount
-                self.current_call = current_player.contribution
+        self.betting_round(self.step.active_players, start)
+        
+        self.end_hand()
+        return
+        
+        
+        
+    #TODO: test
+    # handles the betting round logic
+    def betting_round(self, players: list[Player], start) -> None:
+        current_player = start
+        ended = False
+        while True:
+            for player in players:
+                if player.has_folded: # folded
+                    current_player = (current_player + 1) % len(players)
+                    self.current_player = players[current_player]
+                    continue
+                action = player.act()
+                match action.action:
+                    case ActionType.CHECK:
+                        if self.current_call > player.contribution:
+                            # cannot check when there's an outstanding bet
+                            raise ValueError("Cannot check when there's an outstanding bet")
+                    case ActionType.CALL:
+                        self.pot += action.amount
+                    case ActionType.FOLD:
+                        player.has_folded = True
+                        # lazy deletion to make index tracking easier
+                    case ActionType.RAISE:
+                        self.pot += action.amount
+                        self.current_call = player.contribution
+                        self.last_player_to_raise = player
+                        # betting reopens for all other active players
+                current_player = (current_player + 1) % len(players)
+                self.current_player = players[current_player]
+
+                if self.current_player == self.last_player_to_raise:
+                    ended = True
+                    break # betting round is over
+                if sum([1 for p in players if p.has_folded]) == len(players) - 1: # only one player remains
+                    ended = True
+                    break
+            if ended:
+                break
             
-        
-        # betting within a round continues until every active player has either
-            # Matched the highest bet (called),
-            # Raised again (which reopens betting for others), or
-            # Folded.
-        
-        
-        
-        self.current_player = (self.current_player + 1) % len(self.players)
-        
-        # TODO: check if end of hand
-        if ...:
-            ...
     
     
     def close(self):

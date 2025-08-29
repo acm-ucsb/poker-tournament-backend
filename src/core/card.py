@@ -119,6 +119,7 @@ class Deck():
     call in order of strongest to weakest hand
     """
 
+    # return rank of highest card in the straight flush, -1 if no straight flush found
     def _check_straight_flush(self, cards: list[Card]) -> int:
         suits = {}
         for card in cards:
@@ -135,7 +136,7 @@ class Deck():
         cards_in_suit = [card for card in cards if card.suit == desired_suit]
         return self._check_straight(cards_in_suit)
 
-
+    # return rank of 4 of a kind, -1 if no four found
     def _check_four_of_a_kind(self, cards: list[Card]) -> int:
         vals = {}
         for card in cards:
@@ -207,7 +208,7 @@ class Deck():
         # consecutive differences
         diffs = [vals[i+1] - vals[i] for i in range(len(vals)-1)]
 
-        # lookf for 4 consecutive 1s in diffs
+        # look for 4 consecutive 1s in diffs
         # start from the end
         for i in reversed(range(len(diffs) - 3)):
             if diffs[i:i+4] == [1, 1, 1, 1]:
