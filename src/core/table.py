@@ -167,8 +167,10 @@ class Table:
         self.pot += bb.force_bet(bb_amount)
         
         self.current_call = bb_amount
-        self.current_player = sb
-        self.last_player_to_raise = None # place holder to indicate start of round
+        
+        # skip bb and sm since there were forced to bet
+        self.current_player = self.players[(self.players.index(bb) + 1) % len(self.players)]
+        self.last_player_to_raise = bb
     
     # clean up after the last round
     def end_hand(self):
