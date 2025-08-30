@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from src.core.card import Card
 from src.core.table import TableData, TableUpdateData
 
+
 class UpdateCode(Enum):
     # Table logic
     TABLE_CLOSED = 101
