@@ -62,7 +62,8 @@ class Deck():
     """
 
     # determine the strongest hand from a list of cards
-    def hand_strength(self, cards: list[Card]) -> int:
+    @classmethod
+    def hand_strength(cls, cards: list[Card]) -> int:
         """
         check all strengths in order from strongest to weakest
         an integer representing the highest rank in each hand is returned
@@ -70,47 +71,47 @@ class Deck():
         """
         
         # straight flush
-        check = self._check_straight_flush(cards)
+        check = cls._check_straight_flush(cards)
         if check != -1:
             return 800 + check # highest strength
         
         # four of a kind
-        check = self._check_four_of_a_kind(cards)
+        check = cls._check_four_of_a_kind(cards)
         if check != -1:
             return 700 + check
         
         # full house
-        check = self._check_full_house(cards)
+        check = cls._check_full_house(cards)
         if check != -1:
             return 600 + check  
         
         # flush
-        check = self._check_flush(cards)
+        check = cls._check_flush(cards)
         if check != -1:
             return 500 + check
         
         # straight
-        check = self._check_straight(cards)
+        check = cls._check_straight(cards)
         if check != -1:
             return 400 + check
         
         # three of a kind
-        check = self._check_three_of_a_kind(cards)
+        check = cls._check_three_of_a_kind(cards)
         if check != -1:
             return 300 + check
         
         # two pair
-        check = self._check_two_pair(cards)
+        check = cls._check_two_pair(cards)
         if check != -1:
             return 200 + check
         
         # one pair
-        check = self._check_one_pair(cards)
+        check = cls._check_one_pair(cards)
         if check != -1:
             return 100 + check  
         
         # high card
-        check = self._check_high_card(cards)
+        check = cls._check_high_card(cards)
         return check # lowest strength
         
 
@@ -120,7 +121,8 @@ class Deck():
     """
 
     # return rank of highest card in the straight flush, -1 if no straight flush found
-    def _check_straight_flush(self, cards: list[Card]) -> int:
+    @classmethod
+    def _check_straight_flush(cls, cards: list[Card]) -> int:
         suits = {}
         for card in cards:
             if card.suit in suits:
@@ -134,10 +136,11 @@ class Deck():
         
         desired_suit = [suit for suit, v in suits.items() if v >= 5][0]
         cards_in_suit = [card for card in cards if card.suit == desired_suit]
-        return self._check_straight(cards_in_suit)
+        return cls._check_straight(cards_in_suit)
 
     # return rank of 4 of a kind, -1 if no four found
-    def _check_four_of_a_kind(self, cards: list[Card]) -> int:
+    @staticmethod
+    def _check_four_of_a_kind(cards: list[Card]) -> int:
         vals = {}
         for card in cards:
             if card.rank in vals:
@@ -152,7 +155,8 @@ class Deck():
         return -1
 
     # return rank of highest card in the full house, -1 if no full house found
-    def _check_full_house(self, cards: list[Card]) -> int:
+    @staticmethod
+    def _check_full_house(cards: list[Card]) -> int:
         vals = {}
         for card in cards:
             if card.rank in vals:
@@ -178,7 +182,8 @@ class Deck():
         return -1
 
     # return rank of highest card in the flush, -1 if no flush found
-    def _check_flush(self, cards: list[Card]) -> int:
+    @staticmethod
+    def _check_flush(cards: list[Card]) -> int:
         suits = {}
         for card in cards:
             if card.suit in suits:
@@ -197,7 +202,8 @@ class Deck():
         return max_rank
 
     # return rank of highest card in the straight, -1 if no straight found
-    def _check_straight(self, cards: list[Card]) -> int:
+    @staticmethod
+    def _check_straight(cards: list[Card]) -> int:
         vals = set()
         for card in cards:
             vals.add(card.rank)
@@ -217,7 +223,8 @@ class Deck():
         return -1
 
     #return rank of the three, -1 if no three found
-    def _check_three_of_a_kind(self, cards: list[Card]) -> int:
+    @staticmethod
+    def _check_three_of_a_kind(cards: list[Card]) -> int:
         vals = {}
         for card in cards:
             if card.rank in vals:
@@ -235,7 +242,8 @@ class Deck():
         return -1
 
     # returns rank of highest pair, -1 if no pair found
-    def _check_two_pair(self, cards: list[Card]) -> int:
+    @staticmethod
+    def _check_two_pair(cards: list[Card]) -> int:
         vals = {}
         for card in cards:
             if card.rank in vals:
@@ -254,7 +262,8 @@ class Deck():
         return -1 
 
     # only call this method if all previous methods return false
-    def _check_one_pair(self, cards: list[Card]) -> int:
+    @staticmethod
+    def _check_one_pair(cards: list[Card]) -> int:
         vals = {}
         for card in cards:
             if card.rank in vals:
@@ -269,6 +278,7 @@ class Deck():
                 return rank
             
         return -1 # no pair found
-
-    def _check_high_card(self, cards: list[Card]) -> int:
+    
+    @staticmethod
+    def _check_high_card(cards: list[Card]) -> int:
         return max([card.rank for card in cards])
