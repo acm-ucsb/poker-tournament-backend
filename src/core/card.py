@@ -62,7 +62,7 @@ class Deck():
     """
 
     # determine the strongest hand from a list of cards
-    def hand_stength(self, cards: list[Card]) -> int:
+    def hand_strength(self, cards: list[Card]) -> int:
         """
         check all strengths in order from strongest to weakest
         an integer representing the highest rank in each hand is returned

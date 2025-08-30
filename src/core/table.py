@@ -173,8 +173,8 @@ class Table:
     # clean up after the last round
     def end_hand(self):
         # TODO: determine the winner
-        strengths = [(player, self.deck.hand_stength(player.hand + self.community_cards)) \
-                     for player in self.players if  not player.has_folded]
+        strengths = [(player, self.deck.hand_strength(player.hand + self.community_cards)) \
+                    for player in self.players if  not player.has_folded]
         
         strengths.sort(key=lambda x: x[1], reverse=True)
         highest_strength = strengths[0][1]
@@ -235,7 +235,7 @@ class Table:
         self.community_cards.extend([self.deck.deal_card() for _ in range(3)])
         while self.step.active_players[start].has_folded:
             start = (start + 1) % len(self.step.active_players) # next active player past small blind
-       
+            
         self.betting_round(self.step.active_players, start) # start from first active player from small blind
         if len([player for player in self.step.active_players if not player.has_folded]) == 1:
             self.end_hand()
