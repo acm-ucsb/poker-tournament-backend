@@ -9,14 +9,17 @@ from src.core.signaling import EventType
 
 game_router = APIRouter(prefix="/game", tags=["game"])
 
+
 @game_router.get("/{game_id}", response_model=models.GameState)
 def read_gamestate(game_id: int):
     return models.GameState(
-        community_cards=[models.Card(rank=1, suit=1)],
-        num_players=8,
-        current_round=0,
         players=[],
-        action_on=0,
+        players_cards=[],
+        held_money=[],
+        bet_money=[],
+        pots=[],
+        community_cards=[],
+        current_round="preflop",
     )
 
 

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.game import game_router
 from src.submission import submit_router
 from src.user import user_router
-
+from src.admin import admin_router
 
 app = FastAPI()
 
@@ -24,6 +24,7 @@ app.add_middleware(
 app.include_router(user_router)
 app.include_router(game_router)
 app.include_router(submit_router)
+app.include_router(admin_router)
 
 # demo code routes
 # @app.get("/")

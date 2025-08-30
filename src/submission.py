@@ -1,76 +1,23 @@
-# import os
-# import subprocess
 import pathlib
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from gotrue import User
-import asyncio
 from src.util.auth import verify_user
 from src.util.models import unauth_res, SubmittedFile
 from src.util.supabase_client import db_client
+
+import src.util.helpers as helpers
 
 submit_router = APIRouter(prefix="/submission", tags=["submission"])
 
 allowed_file_extensions = [".cpp", ".py"]
 
-# all files are sitting in the parent dir that the repo is in, <team_id>.<cpp | py>
-uploads_dir = pathlib.Path("..", "poker_tournament_uploads").resolve()
-
-# actually using a mutex, for any fs writes, preventing race conditions
-file_lock = asyncio.Lock()
-
-
-# TODO: should check game state of tournament. if active, should not allow edit access
-def check_edit_access():
-    can_users_edit = True
-    if not can_users_edit:
-        raise HTTPException(
-            status_code=403, detail="files cannot be updated at this time"
-        )
-
-
-def get_team_id(user: User):
-    # get team id from foreign key in users table
-    team_id = (
-        db_client.table("users").select("team_id").eq("id", user.id).single().execute()
-    ).data.get("team_id")
-
-    if team_id is None:  # means that user.team_id = NULL
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="user is not associated with any team",
-        )
-
-    return str(team_id)
-
-
-# gets only the first one it sees. there should only be one.
-# returns fname, text content
-async def get_file_with_stem(stem: str) -> tuple[str, str] | None:
-    if uploads_dir.is_dir():
-        # lock before iterdir just in case. i dont wanna get anything messed up
-        async with file_lock:
-            for entry in uploads_dir.iterdir():
-                if entry.is_file() and entry.stem == stem:
-                    return entry.name, entry.read_text(encoding="utf-8")
-
-
-# deletes only the first one it sees. there should only be one.
-async def delete_file_with_stem(stem: str) -> str | None:
-    if uploads_dir.is_dir():
-        # lock before iterdir just in case. i dont wanna get anything messed up
-        async with file_lock:
-            for entry in uploads_dir.iterdir():
-                if entry.is_file() and entry.stem == stem:
-                    entry.unlink()
-                    return entry.name
-
 
 @submit_router.get("/", response_model=SubmittedFile, responses=unauth_res)
 async def get_submitted_file(user: User = Depends(verify_user)):
-    team_id = get_team_id(user)
+    team_id = helpers.get_team_id(user)
 
-    result = await get_file_with_stem(team_id)
+    result = await helpers.get_file_with_stem(team_id)
     if result is None:
         # set team.has_submitted_code to false, submitted code cannot be found
         db_client.table("teams").update({"has_submitted_code": False}).eq(
@@ -84,16 +31,16 @@ async def get_submitted_file(user: User = Depends(verify_user)):
 # if re-upload a file, old file will get deleted!
 @submit_router.post("/", responses=unauth_res)
 async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
-    check_edit_access()
+    helpers.check_edit_access()
 
     # decode bytes -> str
     # add .replace("\r\n", "\n") if want to normalize line ending wtvr
     content_str = (await file.read()).decode("utf-8")
 
-    team_id = get_team_id(user)
+    team_id = helpers.get_team_id(user)
 
-    async with file_lock:
-        uploads_dir.mkdir(exist_ok=True)
+    async with helpers.file_lock:
+        helpers.uploads_dir.mkdir(exist_ok=True)
 
     if file.filename is None:
         raise HTTPException(
@@ -110,12 +57,12 @@ async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
     team_fname = pathlib.Path(team_id + suffix)
 
     # joining paths
-    file_path = uploads_dir / team_fname
+    file_path = helpers.uploads_dir / team_fname
 
     # delete all other team files before writing to new file. this is atomic
-    await delete_file_with_stem(team_id)
+    await helpers.delete_file_with_stem(team_id)
 
-    async with file_lock:
+    async with helpers.file_lock:
         # save the file to uploads directory
         with file_path.open("w", encoding="utf-8") as f:
             f.write(content_str)
@@ -130,14 +77,14 @@ async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
 
 @submit_router.delete("/", responses=unauth_res)
 async def delete_file(user: User = Depends(verify_user)):
-    check_edit_access()
+    helpers.check_edit_access()
 
-    team_id = get_team_id(user)
+    team_id = helpers.get_team_id(user)
 
-    if not uploads_dir.is_dir():
+    if not helpers.uploads_dir.is_dir():
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    team_fname = await delete_file_with_stem(team_id)
+    team_fname = await helpers.delete_file_with_stem(team_id)
 
     if team_fname is None:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
