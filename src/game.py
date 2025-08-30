@@ -1,18 +1,22 @@
 import os
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from gotrue import User
 from src.util import models
+from src.util.auth import verify_user
 
 game_router = APIRouter(prefix="/game", tags=["game"])
 
 
-@game_router.get("/{game_id}", response_model=models.GameState)
-def read_gamestate(game_id: int):
+@game_router.get("/", response_model=models.GameState, responses=models.unauth_res)
+def read_gamestate(user: User = Depends(verify_user)):
     return models.GameState(
-        community_cards=[models.Card(rank=1, suit=1)],
-        num_players=8,
-        current_round=0,
         players=[],
-        action_on=0,
+        players_cards=[],
+        held_money=[],
+        bet_money=[],
+        pots=[],
+        community_cards=[],
+        current_round="preflop",
     )
 
 
