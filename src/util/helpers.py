@@ -60,11 +60,11 @@ def get_team_id(user: User):
 # returns fname, text content
 async def get_file_with_stem(stem: str) -> tuple[str, str] | None:
     if uploads_dir.is_dir():
-        # lock before iterdir just in case. i dont wanna get anything messed up
-        async with file_lock:
-            for entry in uploads_dir.iterdir():
-                if entry.is_file() and entry.stem == stem:
-                    return entry.name, entry.read_text(encoding="utf-8")
+        # reading the file shouldnt need a mutex...
+        # async with file_lock:
+        for entry in uploads_dir.iterdir():
+            if entry.is_file() and entry.stem == stem:
+                return entry.name, entry.read_text(encoding="utf-8")
 
 
 # deletes only the first one it sees. there should only be one.
