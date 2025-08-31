@@ -237,7 +237,8 @@ class Table:
         self.community_cards.extend([self.deck.deal_card() for _ in range(3)])
         while self.step.active_players[start].has_folded:
             start = (start + 1) % len(self.step.active_players) # next active player past small blind
-            
+        
+        self.last_player_to_raise = self.step.active_players[start] # reset to small blind in case of all checks
         self.betting_round(self.step.active_players, start) # start from first active player from small blind
         if len([player for player in self.step.active_players if not player.has_folded]) == 1:
             self.end_hand()
@@ -249,6 +250,7 @@ class Table:
         while self.step.active_players[start].has_folded:
             start = (start + 1) % len(self.step.active_players) # next active player past small blind
         
+        self.last_player_to_raise = self.step.active_players[start] # reset to small blind in case of all checks
         self.betting_round(self.step.active_players, start)
         if len([player for player in self.step.active_players if not player.has_folded]) == 1:
             self.end_hand()
@@ -258,8 +260,9 @@ class Table:
         _ = self.deck.deal_card() # burn
         self.community_cards.append(self.deck.deal_card())
         while self.step.active_players[start].has_folded:
-            start = (start + 1) % len(self.step.active_players) # next active player past big blind
+            start = (start + 1) % len(self.step.active_players) # next active player past small blind
         
+        self.last_player_to_raise = self.step.active_players[start] # reset to small blind in case of all checks
         self.betting_round(self.step.active_players, start)
         
         self.end_hand()
@@ -286,6 +289,8 @@ class Table:
                             raise ValueError("Cannot check when there's an outstanding bet")
                     case ActionType.CALL:
                         self.pot += action.amount
+                        if not self.last_player_to_raise:
+                            self.last_player_to_raise = player # allows big blind to raise pre-flop
                     case ActionType.FOLD:
                         player.has_folded = True
                         # lazy deletion to make index tracking easier
