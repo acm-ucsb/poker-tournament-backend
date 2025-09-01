@@ -1,12 +1,19 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from math import floor, ceil
 from random import randint
 
 from pydantic import BaseModel, Field
 
-from src.core import broadcasting
-from src.core.card import Deck, Card, RANK, SUIT
-from src.core.player import Player, PlayerData, ActionType
-from src.core import update
+from src.core.broadcasting import BroadcastChannel, UpdateData
+from src.core.card import Deck, RANK, SUIT
+from src.core.player import ActionType
+
+if TYPE_CHECKING:
+    from src.core.broadcasting import UpdateCode, BasePayload
+    from src.core.card import Card
+    from src.core.player import Player, PlayerData
 
 
 class TableData(BaseModel):
@@ -77,11 +84,11 @@ class Table:
         """
         n = len(self.seating)
         small_blind = (self.button + 1) % n
-        while self.seating[small_blind] == None:
+        while self.seating[small_blind] is None:
             small_blind = (small_blind + 1) % n
 
         big_blind = (small_blind + 1) % n
-        while self.seating[big_blind] == None:
+        while self.seating[big_blind] is None:
             big_blind = (big_blind + 1) % n
 
         return (small_blind, big_blind)
@@ -113,11 +120,9 @@ class Table:
             ],
         )
 
-    def notify_broadcaster(
-        self, update_code: update.UpdateCode, payload: update.BasePayload
-    ) -> None:
+    def notify_broadcaster(self, update_code: UpdateCode, payload: BasePayload) -> None:
         self.broadcaster.update(
-            self.data, update.UpdateData(code=update_code, payload=payload)
+            self.data, UpdateData(code=update_code, payload=payload)
         )
 
     def payout(self) -> None:
@@ -171,7 +176,7 @@ class Table:
         # give the indivisible chip to first winner to the left of the button
         if has_indivisible:
             target = (self.button + 1) % len(self.seating)
-            while self.seating[target] == None or self.seating[target] not in winners:
+            while self.seating[target] is None or self.seating[target] not in winners:
                 target = (target + 1) % len(self.seating)
 
             self.seating[target].chips += 1
@@ -257,7 +262,7 @@ class Table:
         _ = self.payout(winners)
         # TODO: determine if player gets eliminated and notify matchmaking
         for player in self.seating:
-            if player == None:
+            if player is None:
                 continue
             if player.chips == 0:
                 player.is_eliminated = True
@@ -275,7 +280,7 @@ class Table:
 
         # move the button
         self.button = (self.button + 1) % len(self.seating)
-        while self.seating[self.button] == None:
+        while self.seating[self.button] is None:
             self.button = (self.button + 1) % len(self.seating)
 
         self.current_player = self.seating[self.button]
@@ -432,7 +437,7 @@ class Table:
         vacant = []
         n = len(self.seating)
         for i in range(start, n + start):
-            if self.seating[i % n] == None:
+            if self.seating[i % n] is None:
                 vacant.append(i % n)
 
         return vacant[::-1]
