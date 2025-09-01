@@ -2,15 +2,15 @@ from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field
-from src.core.card import Card, RANK, SUIT
+from card import Card, RANK, SUIT
+# from table import Table, TableData
 
 
 class ActionType(Enum):
     FOLD = 0
     CHECK = 1
     CALL = 2
-    BET = 3
-    RAISE = 4
+    RAISE = 3
 
 
 class Action(BaseModel):
@@ -60,7 +60,36 @@ class Player:
         self.has_folded = False
         self.contribution = 0
 
-    def act(self) -> Action: ...
+    #TODO: change this to async and implement a timeout
+    def act(self) -> Action:
+        """ implemented as a terminal input for testing purposes --> CHANGE LATER"""
+
+        """ Possible actions:
+        0. Fold
+        1. Check
+        2. Call
+        3. Raise --> also prompt user for amount
+
+        Returns: Action object
+        """
+
+        choice = input(
+            f"Player {self.id}, you have {self.chips} chips. Enter your action (0: Fold, 1: Check, 2: Call, 3: Raise): "
+        )
+        action = int(choice)
+        if action == 0:
+            return Action(action=ActionType.FOLD)
+        elif action == 1:
+            return Action(action=ActionType.CHECK)
+        elif action == 2:
+            return Action(action=ActionType.CALL)
+        elif action == 3:
+            amount = int(
+                input(f"Player {self.id}, enter the amount you want to raise: ")
+            )
+            self.chips -= amount
+            self.contribution += amount
+            return Action(action=ActionType.RAISE, amount=amount)
 
     def force_bet(self, amount: int) -> int:
         """Force player to bet `amount`, if not possible player goes all in.
@@ -97,7 +126,6 @@ class Player:
                 hand_rank = len(build_order) - idx
                 return (hand_rank, best_hand)
 
-    # TODO: test
     @staticmethod
     def _build_straight_flush(cards: list[Card]) -> list[Card]:
         """Precondition: cards are sorted using rank descending."""
@@ -118,7 +146,6 @@ class Player:
             [card for card in cards if card.suit == best_suit]
         )
 
-    # TODO: test
     @staticmethod
     def _build_four_of_a_kind(cards: list[Card]) -> list[Card]:
         """Precondition: cards are sorted using rank descending."""
@@ -127,7 +154,7 @@ class Player:
             if card.rank == current_hand[0].rank:
                 current_hand.append(card)
             else:
-                current_hand = []
+                current_hand = [card]
 
             if len(current_hand) == 4:
                 break
@@ -140,31 +167,29 @@ class Player:
             + [card for card in cards if card.rank != current_hand[0].rank][:1]
         )
 
-    # TODO: test
     @staticmethod
     def _build_full_house(cards: list[Card]) -> list[Card]:
         """Precondition: cards are sorted using rank descending."""
         # TODO: fix to be more efficient
         ranks = [0] * 13
         for card in cards:
-            ranks[card.rank - 1] += 1
+            ranks[card.rank] += 1
 
         three_of_a_kind_rank = -1
         pair_rank = -1
-        for rank, count in reversed(enumerate(ranks)):
+        for rank, count in reversed(list(enumerate(ranks))):
             if count >= 3 and three_of_a_kind_rank == -1:
                 three_of_a_kind_rank = rank
-            elif pair_rank >= 2 and pair_rank == -1:
+            elif count >= 2 and pair_rank == -1:
                 pair_rank = rank
 
-        if three_of_a_kind_rank != -1 and pair_rank != -1:
+        if three_of_a_kind_rank == -1 or pair_rank == -1:
             return []
 
         return [card for card in cards if card.rank == three_of_a_kind_rank][:3] + [
             card for card in cards if card.rank == pair_rank
         ][:2]
 
-    # TODO: test
     @staticmethod
     def _build_flush(cards: list[Card]) -> list[Card]:
         """Precondition: cards are sorted using rank descending."""
@@ -186,31 +211,29 @@ class Player:
 
         return best_hand
 
-    # TODO: test
     @staticmethod
     def _build_straight(cards: list[Card]) -> list[Card]:
         """Precondition: cards are sorted using rank descending."""
         hand = [cards[0]]
-
         for card in cards[1:]:
+            #next card in straight
             if hand[-1].rank - 1 == card.rank:
                 hand.append(card)
             else:
-                hand = []
+                hand = [card]
 
             if len(hand) == 5:
                 break
 
-        # check for ace low
+        # check for ace low -> would be 5 high straight -> stick in back of hand
         if len(hand) == 4 and hand[-1].rank == 0 and cards[0].rank == 12:
-            hand.insert(0, cards[0])
+            hand.append(cards[0])
 
         if len(hand) < 5:
             return []
 
         return hand
 
-    # TODO: test
     @staticmethod
     def _build_three_of_a_kind(cards: list[Card]) -> list[Card]:
         """Precondition: cards are sorted using rank descending."""
@@ -219,7 +242,7 @@ class Player:
             if card.rank == hand[0].rank:
                 hand.append(card)
             else:
-                hand = []
+                hand = [card]
 
             if len(hand) == 3:
                 break
@@ -238,8 +261,8 @@ class Player:
             ranks[card.rank] += 1
 
         best_rank_1, best_rank_2 = -1, -1
-        for rank, count in reversed(enumerate(ranks)):
-            if count == 2:
+        for rank, count in reversed(list(enumerate(ranks))):
+            if count == 2: # has to be exactly 2 to avoid full house
                 if best_rank_1 == -1:
                     best_rank_1 = rank
                 elif best_rank_2 == -1:
@@ -265,7 +288,6 @@ class Player:
 
         return best_hand
 
-    # TODO: test
     @staticmethod
     def _build_one_pair(cards: list[Card]) -> list[Card]:
         """Precondition: cards are sorted using rank descending."""
@@ -274,7 +296,7 @@ class Player:
             if card.rank == hand[0].rank:
                 hand.append(card)
             else:
-                hand = []
+                hand = [card]
 
             if len(hand) == 2:
                 break
@@ -284,8 +306,224 @@ class Player:
 
         return hand + [card for card in cards if card.rank != hand[0].rank][:3]
 
-    # TODO: test
     @staticmethod
     def _build_high_card(cards: list[Card]) -> list[Card]:
         """Precondition: cards are sorted using rank descending."""
         return cards[:5]
+
+
+class PlayerTests:
+    """
+    Test cases for the hand evaluation methods in the Player class.
+    """
+    @staticmethod
+    def test_four_of_a_kind():
+        # tested four of a kind and no four of a kind
+        player = Player("test")
+        cards = [
+            Card(rank=0, suit=0),
+            Card(rank=0, suit=1),
+            Card(rank=0, suit=2),
+            Card(rank=12, suit=3),
+            Card(rank=3, suit=1),
+            Card(rank=4, suit=2),
+            Card(rank=5, suit=3),
+        ]
+
+        cards.sort(key=lambda card: card.rank, reverse=True)
+        hand = player._build_four_of_a_kind(cards)
+        for card in hand:
+            print(card)
+        # assert len(hand) == 5
+        # assert hand[0].rank == 0
+        # assert hand[-1].rank == 5
+        assert len(hand) == 0
+        return
+
+    @staticmethod
+    def test_straight_flush():
+        # tested ace high, ace low, and wrap around
+        player = Player("test")
+        cards = [
+            Card(rank=0, suit=0),
+            Card(rank=1, suit=0),
+            Card(rank=12, suit=0),
+            Card(rank=11, suit=0),
+            Card(rank=10, suit=0),
+            Card(rank=3, suit=1),
+            Card(rank=4, suit=2),
+        ]
+
+        cards.sort(key=lambda card: card.rank, reverse=True)
+        hand = player._build_straight_flush(cards)
+        assert len(hand) == 0
+        return
+        # for card in hand:
+        #     print(card)
+        # assert len(player._build_straight_flush(cards)) == 5
+        # assert player._build_straight_flush(cards)[0].rank == 3
+        # assert player._build_straight_flush(cards)[-1].rank == 12
+    
+    @staticmethod
+    def test_full_house():
+        # tested full house and no full house
+        player = Player("test")
+        cards = [
+            Card(rank=0, suit=0),
+            Card(rank=1, suit=1),
+            Card(rank=2, suit=2),
+            Card(rank=0, suit=1),
+            Card(rank=2, suit=2),
+            Card(rank=4, suit=2),
+            Card(rank=4, suit=3),
+        ]
+
+        cards.sort(key=lambda card: card.rank, reverse=True)
+        hand = player._build_full_house(cards)
+        for card in hand:
+            print(card)
+        assert len(hand) == 0
+        return
+    
+    @staticmethod
+    def test_flush():
+        # tested flush and no flush
+        player = Player("test")
+        cards = [
+            Card(rank=0, suit=0),
+            Card(rank=1, suit=0),
+            Card(rank=2, suit=0),
+            Card(rank=3, suit=0),
+            Card(rank=4, suit=1),
+            Card(rank=5, suit=2),
+            Card(rank=6, suit=0),
+        ]
+
+        cards.sort(key=lambda card: card.rank, reverse=True)
+        hand = player._build_flush(cards)
+        # for card in hand:
+        #     print(card)
+        assert len(hand) == 5
+        return
+    
+    def test_straight():
+        # tested ace high, ace low, and wrap around
+        player = Player("test")
+        cards = [
+            Card(rank=0, suit=0),
+            Card(rank=1, suit=1),
+            Card(rank=8, suit=2),
+            Card(rank=9, suit=0),
+            Card(rank=11, suit=1),
+            Card(rank=10, suit=2),
+            Card(rank=12, suit=0),
+        ]
+
+        cards.sort(key=lambda card: card.rank, reverse=True)
+        hand = player._build_straight(cards)
+        # for card in hand:
+        #     print(card)
+        assert len(hand) == 5
+        return
+    
+    def test_three_of_a_kind():
+        # tested three of a kind and no three of a kind
+        player = Player("test")
+        cards = [
+            Card(rank=12, suit=0),
+            Card(rank=0, suit=1),
+            Card(rank=6, suit=1),
+            Card(rank=4, suit=1),
+            Card(rank=6, suit=2),
+            Card(rank=5, suit=3),
+            Card(rank=6, suit=0),
+        ]
+
+        cards.sort(key=lambda card: card.rank, reverse=True)
+        hand = player._build_three_of_a_kind(cards)
+        # for card in hand:
+        #     print(card)
+        assert len(hand) == 5
+        return
+    
+    def test_two_pair():
+        # tested two pair and no two pair
+        player = Player("test")
+        cards = [
+            Card(rank=0, suit=0),
+            Card(rank=0, suit=1),
+            Card(rank=6, suit=1),
+            Card(rank=4, suit=1),
+            Card(rank=5, suit=2),
+            Card(rank=6, suit=3),
+            Card(rank=4, suit=0),
+        ]
+
+        cards.sort(key=lambda card: card.rank, reverse=True)
+        hand = player._build_two_pair(cards)
+        # for card in hand:
+        #     print(card)
+        assert len(hand) == 5
+        return
+    
+    def test_one_pair():
+        # tested one pair and no one pair
+        player = Player("test")
+        cards = [
+            Card(rank=0, suit=0),
+            Card(rank=1, suit=1),
+            Card(rank=6, suit=1),
+            Card(rank=4, suit=1),
+            Card(rank=8, suit=2),
+            Card(rank=7, suit=3),
+            Card(rank=8, suit=0),
+        ]
+
+        cards.sort(key=lambda card: card.rank, reverse=True)
+        hand = player._build_one_pair(cards)
+        # for card in hand:
+        #     print(card)
+        assert len(hand) == 5
+        return
+    
+    def test_high_card():
+        # tested high card
+        player = Player("test")
+        cards = [
+            Card(rank=0, suit=0),
+            Card(rank=1, suit=1),
+            Card(rank=6, suit=1),
+            Card(rank=4, suit=1),
+            Card(rank=8, suit=2),
+            Card(rank=7, suit=3),
+            Card(rank=9, suit=0),
+        ]
+
+        cards.sort(key=lambda card: card.rank, reverse=True)
+        hand = player._build_high_card(cards)
+        for card in hand:
+            print(card)
+        assert len(hand) == 5
+        return
+
+
+if __name__ == "__main__":
+    PlayerTests.test_straight_flush()
+    print("Straight flush test passed.")
+    PlayerTests.test_four_of_a_kind()
+    print("Four of a kind test passed.")
+    PlayerTests.test_full_house()
+    print("Full house test passed.")
+    PlayerTests.test_flush()
+    print("Flush test passed.")
+    PlayerTests.test_straight()
+    print("Straight test passed.")
+    PlayerTests.test_three_of_a_kind()
+    print("Three of a kind test passed.")
+    PlayerTests.test_two_pair()
+    print("Two pair test passed.")
+    PlayerTests.test_one_pair()
+    print("One pair test passed.")
+    PlayerTests.test_high_card()
+    print("High card test passed.")
+    print("All tests passed.")

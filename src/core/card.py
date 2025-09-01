@@ -29,6 +29,9 @@ class Card(BaseModel):
     rank: int = Field(..., ge=0, le=12)
     suit: int = Field(..., ge=0, le=3)
 
+    def __str__(self) -> str:
+        return f"{RANK[self.rank]}{SUIT[self.suit]}"
+
 
 class Deck:
     def __init__(self):

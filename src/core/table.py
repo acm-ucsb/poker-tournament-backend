@@ -397,7 +397,18 @@ class Table:
                                 "Cannot check when there's an outstanding bet"
                             )
                     case ActionType.CALL:
-                        self.pot += action.amount
+                        # add the balance to the pot
+                
+                        if player.chips + player.contribution <= self.current_call:
+                            # push all in
+                            self.pot += player.chips
+                            player.force_bet(self.current_call - player.contribution)
+                        else:
+                            # remove the balance from player chips
+                            self.pot += (self.current_call - player.contribution)
+                            player.chips -= (self.current_call - player.contribution)
+                            player.contribution  = self.current_call
+                        
                         if not self.last_player_to_raise:
                             self.last_player_to_raise = (
                                 player  # allows big blind to raise pre-flop
@@ -407,7 +418,7 @@ class Table:
                         # lazy deletion to make index tracking easier
                     case ActionType.RAISE:
                         self.pot += action.amount
-                        self.current_call = player.contribution
+                        self.current_call = player.contribution # total contribution after raise
                         self.last_player_to_raise = player
                         # betting reopens for all other active players
                 current_player = (current_player + 1) % len(players)
