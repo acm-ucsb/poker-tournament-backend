@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from fastapi import WebSocket
 
     from src.core.card import Card
-    from src.core.table import TableData, TableUpdateData
+    from src.core.table import TableData
 
 
 class UpdateCode(Enum):
@@ -36,37 +36,51 @@ class UpdateCode(Enum):
 
 
 class BasePayload(BaseModel):
-    pass
+    code: UpdateCode
+
+
+class TableClosedPayload(BasePayload):
+    code = Field(default=UpdateCode.TABLE_CLOSED, frozen=True)
 
 
 class PlayerJoinedPayload(BasePayload):
+    code = Field(default=UpdateCode.PLAYER_JOINED, frozen=True)
     player_id: str = Field(serialization_alias="player-id")
     seat: int
 
 
 class PlayerLeftPayload(BasePayload):
+    code = Field(default=UpdateCode.PLAYER_LEFT, frozen=True)
     player_id: str = Field(serialization_alias="player-id")
 
 
 class ButtonMovedPayload(BasePayload):
+    code = Field(default=UpdateCode.BUTTON_MOVED, frozen=True)
     button_seat: int = Field(serialization_alias="dealer-seat")
     small_blind_seat: int = Field(serialization_alias="small-blind-seat")
     big_blind_seat: int = Field(serialization_alias="big-blind-seat")
 
 
 class PlayerActedPayload(BasePayload):
+    code = Field(default=UpdateCode.PLAYER_ACTED, frozen=True)
     player_id: str = Field(serialization_alias="player-id")
     action: Literal["FOLD", "CALL", "CHECK", "RAISE", "ALL-IN"]
     amount: int
 
 
 class HandDealtPayload(BasePayload):
+    code = Field(default=UpdateCode.HAND_DEALT, frozen=True)
     player_id: str = Field(serialization_alias="player-id")
     cards: list[Card]
 
 
 class CCDealtPayload(BasePayload):
+    code = Field(default=UpdateCode.CC_DEALT, frozen=True)
     cards: list[Card]
+
+
+class ShowdownPayload(BasePayload):
+    code = Field(default=UpdateCode.SHOWDOWN, frozen=True)
 
 
 class Payout(BaseModel):
@@ -75,20 +89,22 @@ class Payout(BaseModel):
 
 
 class PayoutPayload(BasePayload):
+    code = Field(default=UpdateCode.PAYOUT, frozen=True)
     payouts: list[Payout]
 
 
+class BlindAmountUpdatePayload(BasePayload):
+    code = Field(default=UpdateCode.BLIND_AMOUNT_UPDATED, frozen=True)
+
+
 class PlayerEliminatedPayload(BasePayload):
+    code = Field(default=UpdateCode.PLAYER_ELIMINATED, frozen=True)
     player_id: str = Field(serialization_alias="player-id")
 
 
 class GameMessagePayload(BasePayload):
+    code = Field(default=UpdateCode.GAME_MESSAGE, frozen=True)
     message: str
-
-
-class UpdateData(BaseModel):
-    code: UpdateCode
-    payload: BasePayload
 
 
 class BroadcastChannel:
@@ -136,10 +152,10 @@ class BroadcastChannel:
             if connection not in disconnected
         ]
 
-    def update(self, state: TableData, update: TableUpdateData):
+    def update(self, payload: BasePayload):
         msg = {
-            "current-state": state.model_dump(mode="json", by_alias=True),
-            "update-log": update.model_dump(mode="json", by_alias=True),
+            "code": payload.code.value,
+            "info": payload.model_dump(mode="json", by_alias=True, exclude="code"),
         }
 
         asyncio.create_task(self._broadcast(msg))
