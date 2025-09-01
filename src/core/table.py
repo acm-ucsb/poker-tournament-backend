@@ -105,7 +105,16 @@ class Table:
     def notify_broadcaster(self, update_code: update.UpdateCode, payload: update.BasePayload) -> None:
         self.broadcaster.update(self.data, update.UpdateData(code=update_code, payload=payload))
     
-    def payout(self, winners: list[Player], paid = 0) -> int:
+    def payout(self) -> None:
+        hands = [(rank, [card.rank for card in cards], player) for rank, cards, player in [(*player.build_best_hand(self.community_cards), player) for player in self.players if not player.has_folded]]
+        
+        paid = 0
+        while self.pot > 0:
+            winners = self._eval_winners(hands)
+            hands = [hand for hand in hands if hand[2] not in winners]
+            paid += self.payout_helper(winners, paid)
+    
+    def payout_helper(self, winners: list[Player], paid = 0) -> int:
         """Distribute the pot to winners according to their contribution.
         Returns:
             int: The amount paid to all the winners.
@@ -142,6 +151,33 @@ class Table:
             total_paid += 1
 
         return total_paid - paid
+    
+    #TODO: test
+    def _eval_winners(self, hands: list[tuple[int, list[int], Player]]) -> list[Player]:
+        def eval_tie_break(hand_1: list[Card], hand_2: list[Card]) -> int:
+            for card_1, card_2 in zip(hand_1, hand_2):
+                if card_1 > card_2:
+                    return -1
+                if card_1 < card_2:
+                    return 1
+                
+            return 0
+        
+        best_rank = max([rank for rank, _, _ in hands])
+        best_hands = [(hand, player) for rank, hand, player in hands if rank == best_rank]
+        winners = [best_hands[0][1]]
+        current_hand = best_hands[0][0]
+        for hand, player in best_hands[1:]:
+            match eval_tie_break(current_hand, hand):
+                case 0:
+                    winners.append(player)
+                case 1:
+                    current_hand = hand
+                    winners = [player]
+                case -1:
+                    pass
+        
+        return winners
     
     def start_hand(self):
         # resetting everything
@@ -267,8 +303,6 @@ class Table:
         
         self.end_hand()
         return
-        
-        
         
     #TODO: test
     # handles the betting round logic
