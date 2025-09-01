@@ -1,12 +1,16 @@
 import asyncio
 from enum import Enum
-from typing import Any, Literal
+from typing import TYPE_CHECKING
 
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocketDisconnect
 from pydantic import BaseModel, Field
 
-from src.core.card import Card
-from src.core.table import TableData, TableUpdateData
+if TYPE_CHECKING:
+    from typing import Any, Literal
+    from fastapi import WebSocket
+
+    from src.core.card import Card
+    from src.core.table import TableData, TableUpdateData
 
 
 class UpdateCode(Enum):
