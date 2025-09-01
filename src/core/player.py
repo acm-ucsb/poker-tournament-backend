@@ -88,7 +88,6 @@ class Player:
         
         hand = self.hand + community_cards
         hand.sort(key=lambda card: card.rank, reverse=True)
-        
         for idx, build in enumerate(build_order):
             best_hand = build(hand)
             if len(best_hand) == 5:
@@ -98,6 +97,7 @@ class Player:
     #TODO: test
     @staticmethod
     def _build_straight_flush(cards: list[Card]) -> list[Card]:
+        """Precondition: cards are sorted using rank descending."""
         suits = [0] * 4
         for card in cards:
             suits[card.suit] += 1
