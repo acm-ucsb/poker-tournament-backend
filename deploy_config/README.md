@@ -32,3 +32,4 @@ sudo systemctl start fastapi
 ```
 
 - can also check status with `sudo systemctl status <service-name>`
+- update fastapi production deployement after pulling from git with `sudo systemctl restart fastapi`

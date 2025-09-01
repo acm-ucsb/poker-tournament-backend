@@ -3,7 +3,7 @@ from random import randint
 
 from pydantic import BaseModel, Field
 
-from src.core.broadcasting import BroadcastChannel
+from src.core import broadcasting
 from src.core.card import Deck, Card, RANK, SUIT
 from src.core.player import Player, PlayerData, ActionType
 from src.core import update

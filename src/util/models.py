@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Any
 from fastapi import status
 
@@ -22,14 +22,24 @@ class SubmittedFile(BaseModel):
     content: str
 
 
-class Card(BaseModel):
-    rank: int = Field(..., ge=1, le=13)
-    suit: int = Field(..., ge=1, le=4)
+# class Card(BaseModel):
+#     repr: str
+#     rank: int = Field(..., ge=1, le=13)
+#     suit: int = Field(..., ge=1, le=4)
 
 
+class Pot(BaseModel):
+    value: float
+    players: list[str]
+
+
+# cards are defined as 1st char: A(2-9)TJQK, 2nd char: SDCH
+# currently does not take into account side pots
 class GameState(BaseModel):
-    community_cards: list[Card]
-    num_players: int
-    current_round: int
-    players: list[int]
-    action_on: int
+    players: list[str]  # team_ids
+    players_cards: list[list[str]]
+    held_money: list[float]
+    bet_money: list[float]  # per round, -1 for fold, 0 for check/hasn't bet yet
+    community_cards: list[str]
+    pots: list[Pot]
+    current_round: str  # preflop, flop, turn, river
