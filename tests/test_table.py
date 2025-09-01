@@ -55,24 +55,24 @@ def test_get_vacant():
 def test_payout():
     table, _ = init_table()
     
-    assert table.payout([table.players[2]]) == 800
+    assert table.payout_helper([table.players[2]]) == 800
     assert table.players[2].chips == 800
     assert table.pot == 500
     
-    assert table.payout([table.players[0], table.players[1]], 800) == 500
+    assert table.payout_helper([table.players[0], table.players[1]], 800) == 500
     assert table.players[0].chips == 150
     assert table.players[1].chips == 1350
     assert table.pot == 0
     
     table, _ = init_table()
-    assert table.payout([table.players[0], table.players[1]]) == 1300
+    assert table.payout_helper([table.players[0], table.players[1]]) == 1300
     assert table.players[0].chips == 550
     assert table.players[1].chips == 1750
     assert table.pot == 0
     
     table, _ = init_table()
-    assert table.payout([table.players[0]]) == 1100
-    assert table.payout([table.players[1], table.players[2], table.players[3]], 1100) == 200
+    assert table.payout_helper([table.players[0]]) == 1100
+    assert table.payout_helper([table.players[1], table.players[2], table.players[3]], 1100) == 200
     assert table.players[0].chips == 1100
     assert table.players[1].chips == 1200
     assert table.players[2].chips == 0
@@ -85,7 +85,7 @@ def test_payout():
     table.players[3].contribution = 100
     table.pot = 400
     
-    assert table.payout([table.players[0], table.players[1], table.players[3]]) == 400
+    assert table.payout_helper([table.players[0], table.players[1], table.players[3]]) == 400
     assert table.players[0].chips == 133
     assert table.players[1].chips == 1134
     assert table.players[2].chips == 0
