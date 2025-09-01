@@ -74,8 +74,6 @@ class Player:
         return amount
     
     def build_best_hand(self, community_cards: list[Card]) -> tuple[int, list[Card]]:
-        hand = self.hand + community_cards
-        
         build_order = [
             self._build_straight_flush,
             self._build_four_of_a_kind,
@@ -88,8 +86,9 @@ class Player:
             self._build_high_card,
         ]
         
+        hand = self.hand + community_cards
+        hand.sort(key=lambda card: card.rank, reverse=True)
         
-        # TODO: (fix) make sure that the best_hand is sorted by eval types
         for idx, build in enumerate(build_order):
             best_hand = build(hand)
             if len(best_hand) == 5:
@@ -117,28 +116,27 @@ class Player:
     #TODO: test
     @staticmethod
     def _build_four_of_a_kind(cards: list[Card]) -> list[Card]:
-        ranks = [0] * 13
-        
-        for card in cards:
-            ranks[card.rank - 1] += 1
-        
-        best_rank = -1
-        for rank, count in reversed(enumerate(ranks)):
-            if count == 4:
-                best_rank = rank
-                break
+        """Precondition: cards are sorted using rank descending."""
+        current_hand = [cards[0]]
+        for card in cards[1:]:
+            if card.rank == current_hand[0].rank:
+                current_hand.append(card)
+            else:
+                current_hand = []
             
-        if best_rank == -1:
+            if len(current_hand) == 4:
+                break
+        
+        if len(current_hand) < 4:
             return []
         
-        best_hand = [card for card in cards if card.rank == best_rank]
-        best_hand.extend(Player._build_high_card([card for card in cards if card.rank != best_rank]))[0]
-        
-        return best_hand
+        return current_hand + [card for card in cards if card.rank != current_hand[0].rank][:1]
     
     # TODO: test
     @staticmethod
     def _build_full_house(cards: list[Card]) -> list[Card]:
+        """Precondition: cards are sorted using rank descending."""
+        # TODO: fix to be more efficient
         ranks = [0] * 13
         for card in cards:
             ranks[card.rank - 1] += 1
@@ -159,6 +157,7 @@ class Player:
     # TODO: test
     @staticmethod
     def _build_flush(cards: list[Card]) -> list[Card]:
+        """Precondition: cards are sorted using rank descending."""
         suits = [0] * 4
         
         for card in cards:
@@ -173,78 +172,57 @@ class Player:
         if best_suit == -1:
             return []
         
-        best_hand = [card for card in cards if card.suit == best_suit]
-        best_hand.sort(key=lambda card: card.rank, reverse=True)
+        best_hand = [card for card in cards if card.suit == best_suit][:5]
         
-        return best_hand[:5]
+        return best_hand
     
     # TODO: test
     @staticmethod
     def _build_straight(cards: list[Card]) -> list[Card]:
-        # 14 to account for the ace low
-        ranks = [0] * 14
-        for card in cards:
-            ranks[card.rank + 1] += 1
-            if card.rank == 12:
-                ranks[0] += 1
+        """Precondition: cards are sorted using rank descending."""
+        hand = [cards[0]]
         
-        best_high = -1
-        current_length = 0
-        for rank, count in enumerate(ranks):
-            if count != 0:
-                current_length += 1
-                
-                if current_length >= 5:
-                    best_high = rank
+        for card in cards[1:]:
+            if hand[-1].rank - 1 == card.rank:
+                hand.append(card)
             else:
-                current_length = 0
-                
-        if best_high == -1:
+                hand = []
+            
+            if len(hand) == 5:
+                break
+        
+        # check for ace low
+        if len(hand) == 4 and hand[-1].rank == 0 and cards[0].rank == 12:
+            hand.insert(0, cards[0])
+        
+        if len(hand) < 5:
             return []
         
-        cards_sorted = sorted(cards, key=lambda card: card.rank)
-        
-        # +1 to offset rank shifted due to low ace
-        current_rank = best_high - 5 + 1
-        best_hand = []
-        
-        if current_rank == 0:
-            current_rank = 1
-            best_hand.append(cards_sorted[-1])
-            
-        for card in cards_sorted:
-            if len(best_hand) == 5:
-                break
-            
-            if card.rank == current_rank:
-                best_hand.append(card)
-                current_rank += 1
-        
-        return best_hand
+        return hand
     
     #TODO: test
     @staticmethod
     def _build_three_of_a_kind(cards: list[Card]) -> list[Card]:
-        ranks = [0] * 13
-        for card in cards:
-            ranks[card.rank] += 1
-        
-        best_rank = -1
-        for rank, count in reversed(enumerate(ranks)):
-            if count == 3:
-                best_rank = rank
-                
-        if best_rank == -1:
-            return []
-                
-        best_hand = [card for card in cards if card.rank == best_rank]
-        best_hand.extend(Player._build_high_card([card for card in cards if card.rank != best_rank])[:2])
+        """Precondition: cards are sorted using rank descending."""
+        hand = [cards[0]]
+        for card in cards[1:]:
+            if card.rank == hand[0].rank:
+                hand.append(card)
+            else:
+                hand = []
             
-        return best_hand
+            if len(hand) == 3:
+                break
+        
+        if len(hand) < 3:
+            return []
+        
+        return hand + [card for card in cards if card.rank != hand[0].rank][:2]
 
     #TODO: test
     @staticmethod
     def _build_two_pair(cards: list[Card]) -> list[Card]:
+        """Precondition: cards are sorted using rank descending."""
         ranks = [0] * 13
         for card in cards:
             ranks[card.rank] += 1
@@ -263,32 +241,31 @@ class Player:
             return []
         
         best_hand = [card for card in cards if card.rank == best_rank_1 or card.rank == best_rank_2]
-        best_hand.extend(Player._build_high_card([card for card in cards if card.rank != best_rank_1 and card.rank != best_rank_2])[0])
+        best_hand.append([card for card in cards if card.rank != best_rank_1 and card.rank != best_rank_2][0])
             
         return best_hand
     
     #TODO: test
     @staticmethod
     def _build_one_pair(cards: list[Card]) -> list[Card]:
-        ranks = [0] * 13
-        for card in cards:
-            ranks[card.rank] += 1
+        """Precondition: cards are sorted using rank descending."""
+        hand = [cards[0]]
+        for card in cards[1:]:
+            if card.rank == hand[0].rank:
+                hand.append(card)
+            else:
+                hand = []
             
-        best_rank = -1
-        for rank, count in reversed(enumerate(ranks)):
-            if count == 2:
-                best_rank = rank
+            if len(hand) == 2:
                 break
-            
-        if best_rank == -1:
-            return []
-            
-        best_hand = [card for card in cards if card.rank == best_rank]
-        best_hand.extend(Player._build_high_card([card for card in cards if card.rank != best_rank])[:3])
         
-        return best_hand
+        if len(hand) < 2:
+            return []
+        
+        return hand + [card for card in cards if card.rank != hand[0].rank][:3]
     
     #TODO: test
     @staticmethod
     def _build_high_card(cards: list[Card]) -> list[Card]:
-        return sorted(cards, key=lambda card: card.rank, reverse=True)[:5]
+        """Precondition: cards are sorted using rank descending."""
+        return cards[:5]
