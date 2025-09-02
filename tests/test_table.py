@@ -1,5 +1,6 @@
 from src.core.table import Table
 from src.core.player import Player
+from src.core.card import Card
 
 import pytest
 
