@@ -6,7 +6,7 @@ sys.path.insert(0, project_root)
 
 
 from src.core.player import Player
-from src.core.card import Card
+from src.core.card import Card, Deck
 
 class PlayerTests:
     """
@@ -201,25 +201,38 @@ class PlayerTests:
         #     print(card)
         assert len(hand) == 5
         return
+    
+    def test_random_hands():
+        hands = {
+            9: "Straight Flush",
+            8: "Four of a Kind",
+            7: "Full House",
+            6: "Flush",
+            5: "Straight",
+            4: "Three of a Kind",
+            3: "Two Pair",
+            2: "One Pair",
+            1: "High Card"
+        }
+        player = Player("test")
+        deck = Deck()
+        i = 1
+        while True:
+            print(f"Hand {i}: ", end=" ")
+            hand = [deck.deal_card() for _ in range(7)]
+            hand.sort(key=lambda card: card.rank, reverse=True)
+            for card in hand:
+                print(card, end=" ")
+            print("--->", end=" ")
+            rank, best = player.build_best_hand(hand)
+            print(hands[rank], [str(card) for card in best])
+            if rank >= 9:
+                break
+            i += 1
+            deck.reset()
+            print()
+        return
 
 
 if __name__ == "__main__":
-    PlayerTests.test_straight_flush()
-    print("Straight flush test passed.")
-    PlayerTests.test_four_of_a_kind()
-    print("Four of a kind test passed.")
-    PlayerTests.test_full_house()
-    print("Full house test passed.")
-    PlayerTests.test_flush()
-    print("Flush test passed.")
-    PlayerTests.test_straight()
-    print("Straight test passed.")
-    PlayerTests.test_three_of_a_kind()
-    print("Three of a kind test passed.")
-    PlayerTests.test_two_pair()
-    print("Two pair test passed.")
-    PlayerTests.test_one_pair()
-    print("One pair test passed.")
-    PlayerTests.test_high_card()
-    print("High card test passed.")
-    print("All tests passed.")
+    PlayerTests.test_random_hands()

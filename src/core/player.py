@@ -56,7 +56,7 @@ class Player:
 
     def new_hand(self):
         self.hand = []
-        self.is_all_in = False
+        # self.is_all_in = False
         self.has_folded = False
         self.contribution = 0
 
@@ -87,8 +87,8 @@ class Player:
             amount = int(
                 input(f"Player {self.id}, enter the amount you want to raise: ")
             )
-            self.chips -= amount
-            self.contribution += amount
+            # self.chips -= amount
+            # self.contribution += amount
             return Action(action=ActionType.RAISE, amount=amount)
 
     def force_bet(self, amount: int) -> int:
@@ -106,6 +106,7 @@ class Player:
         return amount
 
     def build_best_hand(self, community_cards: list[Card]) -> tuple[int, list[Card]]:
+        # tested
         build_order = [
             self._build_straight_flush,
             self._build_four_of_a_kind,
@@ -117,7 +118,6 @@ class Player:
             self._build_one_pair,
             self._build_high_card,
         ]
-
         hand = self.hand + community_cards
         hand.sort(key=lambda card: card.rank, reverse=True)
         for idx, build in enumerate(build_order):

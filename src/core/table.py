@@ -5,8 +5,8 @@ from math import floor, ceil
 from random import randint
 
 from pydantic import BaseModel, Field
-
-from src.core.broadcasting import BroadcastChannel, UpdateData
+""" UNCOMMENT EVERYTHING TO DO WITH BROADCASTING WHEN NEEDED """
+# from src.core.broadcasting import BroadcastChannel, UpdateData UNCOMMENT LATER
 from src.core.card import Deck, RANK, SUIT
 from src.core.player import ActionType
 
@@ -63,7 +63,7 @@ class Table:
         )
         self.current_call: int = 0
 
-        self.broadcaster = BroadcastChannel()
+         # self.broadcaster = BroadcastChannel() UNCOMMENT LATER
 
         self.pot: int = 0
 
@@ -119,11 +119,31 @@ class Table:
                 RANK[card.rank] + SUIT[card.suit] for card in self.community_cards
             ],
         )
+    """ Used for testing """
+    def __str__(self) -> str:
+        s = f"\nTable {self.id}: \n"
+        for player in self.seating:
+            if player is not None:
+                s += f"{(player.id, 
+                         player.chips, 
+                         player.contribution,
+                         [str(card) for card in player.hand], 
+                         'I' if not player.has_folded else 'F')}, "
+        s += "\n"
+        s += f"Community Cards: {[str(card) for card in self.community_cards]}\n"
+        s += f"Action: {self.current_player.id if self.current_player else 'None'}\n"
+        s += f"Last to Raise: {self.last_player_to_raise.id if self.last_player_to_raise else 'None'}\n"
+        s += f"Pot: {self.pot}\n"
+        s += f"Current Call: {self.current_call}\n"
+
+        return s
 
     def notify_broadcaster(self, update_code: UpdateCode, payload: BasePayload) -> None:
-        self.broadcaster.update(
-            self.data, UpdateData(code=update_code, payload=payload)
-        )
+        pass
+        # UNCOMMENT LATER
+        # self.broadcaster.update(
+        #     self.data, UpdateData(code=update_code, payload=payload)
+        # )
 
     def payout(self) -> None:
         hands = [
@@ -138,6 +158,7 @@ class Table:
         paid = 0
         while self.pot > 0:
             winners = self._eval_winners(hands)
+            # non-folded losers
             hands = [hand for hand in hands if hand[2] not in winners]
             paid += self.payout_helper(winners, paid)
 
@@ -151,6 +172,9 @@ class Table:
         total_paid = paid
         has_indivisible = False
 
+        for winner in winners:
+            print(winner.id)
+
         n = len(winners)
         for i, winner in enumerate(winners):
             eligible_amount = sum(
@@ -160,7 +184,6 @@ class Table:
                 ]
             )
             payout = max(min(eligible_amount - total_paid, self.pot) / (n - i), 0)
-
             if ceil(payout) > payout:
                 has_indivisible = True
 
@@ -242,24 +265,13 @@ class Table:
         self.current_player = self.players[
             (self.players.index(bb) + 1) % len(self.players)
         ]
-        self.last_player_to_raise = bb
+        self.last_player_to_raise = None
 
     # clean up after the last round
     def end_hand(self):
         # TODO: determine the winner
-        strengths = [
-            (player, self.deck.hand_strength(player.hand + self.community_cards))
-            for player in self.players
-            if not player.has_folded
-        ]
-
-        strengths.sort(key=lambda x: x[1], reverse=True)
-        highest_strength = strengths[0][1]
-        winners = [
-            player for player, strength in strengths if strength == highest_strength
-        ]
         # payout the winners
-        _ = self.payout(winners)
+        _ = self.payout()
         # TODO: determine if player gets eliminated and notify matchmaking
         for player in self.seating:
             if player is None:
@@ -285,19 +297,24 @@ class Table:
 
         self.current_player = self.seating[self.button]
 
-    # TODO: test
-    def step(self):
-        self.start_hand()
-        self.step.active_players = self.players
+        print(self)
 
+    def step(self):
+        """
+        Removed self.self from everything --> don't know why it was there in the first place
+            put back if needed
+        """
+        self.start_hand()
+        active_players = self.players
+        
         # all players in at this point, so don't have to check for folded players
-        start = self.step.active_players.index(
+        start = active_players.index(
             self.current_player
         )  # rounds start from small blind
         # flop starts from after big blind
-        after_big = (self.step.active_players.index(self.current_player) + 2) % len(
-            self.step.active_players
-        )
+        # after_big = (active_players.index(self.current_player) + 2) % len(
+        #     active_players
+        # )
         """
         each betting round starts from first active player starting from little blind 
         to check if betting has ended:
@@ -305,135 +322,159 @@ class Table:
         if only one active player remains, end the hand
         need a raise variable to check how much to call
         """
+        #print(self)
         # blinds
-        self.betting_round(self.step.active_players, after_big)
+        self.betting_round(active_players, start)
         # only one player remaining
         if (
             len(
-                [player for player in self.step.active_players if not player.has_folded]
+                [player for player in active_players if not player.has_folded]
             )
             == 1
         ):
+            # add stub cards for payout to work
+            self.community_cards.extend([self.deck.deal_card() for _ in range(5)])
             self.end_hand()
             return
 
         # flop
         _ = self.deck.deal_card()  # burn
         self.community_cards.extend([self.deck.deal_card() for _ in range(3)])
-        while self.step.active_players[start].has_folded:
+        start = active_players.index(self.seating[self.small_blind])
+        print(start)
+        while active_players[start].has_folded:
             start = (start + 1) % len(
-                self.step.active_players
+                active_players
             )  # next active player past small blind
+        self.current_player = active_players[start]
+        
 
-        self.last_player_to_raise = self.step.active_players[
-            start
-        ]  # reset to small blind in case of all checks
+        self.last_player_to_raise = None  # reset to small blind in case of all checks
         self.betting_round(
-            self.step.active_players, start
+            active_players, start
         )  # start from first active player from small blind
         if (
             len(
-                [player for player in self.step.active_players if not player.has_folded]
+                [player for player in active_players if not player.has_folded]
             )
             == 1
         ):
+            self.community_cards.extend([self.deck.deal_card() for _ in range(2)])
             self.end_hand()
             return
 
         # turn
         _ = self.deck.deal_card()  # burn
         self.community_cards.append(self.deck.deal_card())
-        while self.step.active_players[start].has_folded:
+        while active_players[start].has_folded:
             start = (start + 1) % len(
-                self.step.active_players
+                active_players
             )  # next active player past small blind
 
-        self.last_player_to_raise = self.step.active_players[
-            start
-        ]  # reset to small blind in case of all checks
-        self.betting_round(self.step.active_players, start)
+
+        self.current_player = active_players[start]
+        self.last_player_to_raise = None # reset to small blind in case of all checks
+        self.betting_round(active_players, start)
         if (
             len(
-                [player for player in self.step.active_players if not player.has_folded]
+                [player for player in active_players if not player.has_folded]
             )
             == 1
         ):
+            self.community_cards.append(self.deck.deal_card())
             self.end_hand()
             return
 
         # river
         _ = self.deck.deal_card()  # burn
         self.community_cards.append(self.deck.deal_card())
-        while self.step.active_players[start].has_folded:
+        while active_players[start].has_folded:
             start = (start + 1) % len(
-                self.step.active_players
+                active_players
             )  # next active player past small blind
 
-        self.last_player_to_raise = self.step.active_players[
-            start
-        ]  # reset to small blind in case of all checks
-        self.betting_round(self.step.active_players, start)
+        self.last_player_to_raise = None  # reset to small blind in case of all checks
+        self.betting_round(active_players, start)
 
         self.end_hand()
         return
 
-    # TODO: test
     # handles the betting round logic
     def betting_round(self, players: list[Player], start) -> None:
+        print(len(players))
         current_player = start
-        ended = False
         while True:
-            for player in players:
-                if player.has_folded:  # folded
-                    current_player = (current_player + 1) % len(players)
-                    self.current_player = players[current_player]
-                    continue
-                action = player.act()
-                match action.action:
-                    case ActionType.CHECK:
-                        if self.current_call > player.contribution:
-                            # cannot check when there's an outstanding bet
-                            raise ValueError(
-                                "Cannot check when there's an outstanding bet"
-                            )
-                    case ActionType.CALL:
-                        # add the balance to the pot
-                
-                        if player.chips + player.contribution <= self.current_call:
-                            # push all in
-                            self.pot += player.chips
-                            player.force_bet(self.current_call - player.contribution)
-                        else:
-                            # remove the balance from player chips
-                            self.pot += (self.current_call - player.contribution)
-                            player.chips -= (self.current_call - player.contribution)
-                            player.contribution  = self.current_call
-                        
-                        if not self.last_player_to_raise:
-                            self.last_player_to_raise = (
-                                player  # allows big blind to raise pre-flop
-                            )
-                    case ActionType.FOLD:
-                        player.has_folded = True
-                        # lazy deletion to make index tracking easier
-                    case ActionType.RAISE:
-                        self.pot += action.amount
-                        self.current_call = player.contribution # total contribution after raise
-                        self.last_player_to_raise = player
-                        # betting reopens for all other active players
+            player = self.current_player
+            if self.last_player_to_raise and self.current_player.id == self.last_player_to_raise.id:
+                break  # betting round is over
+            if (
+                sum([1 for p in players if p.has_folded]) == len(players) - 1
+            ):  # only one player remains
+                break
+            print(self)
+            if player.has_folded:  # folded
                 current_player = (current_player + 1) % len(players)
                 self.current_player = players[current_player]
+                # print("IN FOLD", self.last_player_to_raise.id if self.last_player_to_raise else "None", self.current_player.id)
+                continue
+            action = player.act()
+            match action.action:
+                case ActionType.CHECK:
+                    if self.current_call > player.contribution:
+                        # cannot check when there's an outstanding bet
+                        raise ValueError(
+                            "Cannot check when there's an outstanding bet"
+                        )
+                    if not self.last_player_to_raise:
+                        self.last_player_to_raise = (
+                            player  # allows big blind to raise pre-flop
+                        )
+                case ActionType.CALL:
+                    # add the balance to the pot
+                
+                    if player.chips + player.contribution <= self.current_call:
+                        # push all in
+                        self.pot += player.chips
+                        player.force_bet(self.current_call - player.contribution)
+                    else:
+                        # remove the balance from player chips
+                        self.pot += (self.current_call - player.contribution)
+                        player.chips -= (self.current_call - player.contribution)
+                        player.contribution  = self.current_call
+                    
+                    if not self.last_player_to_raise:
+                        self.last_player_to_raise = (
+                            player  # allows big blind to raise pre-flop
+                        )
+                case ActionType.FOLD:
+                    player.has_folded = True
+                    # lazy deletion to make index tracking easier
+                case ActionType.RAISE:
+                    total = self.current_call + action.amount
 
-                if self.current_player == self.last_player_to_raise:
-                    ended = True
-                    break  # betting round is over
-                if (
-                    sum([1 for p in players if p.has_folded]) == len(players) - 1
-                ):  # only one player remains
-                    ended = True
-                    break
-            if ended:
-                break
+                    if player.contribution + player.chips < total: # jam all in
+                        self.pot += player.chips
+                        player.force_bet(total)
+                    else:
+                        self.pot += (total - player.contribution)
+                        player.chips -= (total - player.contribution)
+                        player.contribution = total
+
+                    self.current_call = total# total contribution after raise
+                    self.last_player_to_raise = player
+                    # betting reopens for all other active players
+            current_player = (current_player + 1) % len(players)
+            self.current_player = players[current_player]
+
+            # print(self.last_player_to_raise.id if self.last_player_to_raise else "None", self.current_player.id)
+            # if self.last_player_to_raise and self.current_player.id == self.last_player_to_raise.id:
+            #     ended = True
+            #     break  # betting round is over
+            # if (
+            #     sum([1 for p in players if p.has_folded]) == len(players) - 1
+            # ):  # only one player remains
+            #     ended = True
+            #     break
 
     def close(self):
         # close all broadcasting channels and clean up any remaining resources
