@@ -1,7 +1,7 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from gotrue import User
 from postgrest import APIError
-from src.util.models import unauth_res, SubmittedFile
+from src.util.models import unauth_res, SubmittedFile, FileRunResult, GameState
 from src.util.auth import verify_admin_user
 from src.util.supabase_client import db_client
 import src.util.helpers as helpers
@@ -45,3 +45,12 @@ async def get_submission_by_team_id(team_id: str, _: User = Depends(verify_admin
         )
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+
+@admin_router.post(
+    "/submission/run/", response_model=FileRunResult, responses=unauth_res
+)
+async def run_code_by_team_id(
+    team_id: str, state: GameState, _: User = Depends(verify_admin_user)
+):
+    return await helpers.run_file(team_id, state)
