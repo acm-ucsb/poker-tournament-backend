@@ -1,11 +1,11 @@
 import os
-import asyncio
+# import asyncio
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from src.util import models
-from src.core.broadcasting import BroadcastChannel
-from src.core.table import Table
-from src.core.signaling import EventType
+# from src.core.broadcasting import BroadcastChannel
+# from src.core.table import Table
+# from src.core.signaling import EventType
 
 game_router = APIRouter(prefix="/game", tags=["game"])
 
@@ -57,15 +57,16 @@ def next_move(game_id: int, moves: int):
 @game_router.websocket("/{table_id}/ws")
 # not sure if this is right
 async def websocket_connect(*, websocket: WebSocket, table_id: str):
-    import asyncio
     # TODO: query the table_id using game_id
-    MOCK_TABLE = Table("1")
-    MOCK_CHANNEL = BroadcastChannel(MOCK_TABLE)
-    
-    await MOCK_CHANNEL.connect(websocket)
-    MOCK_CHANNEL.update()
-    asyncio.sleep(2)
-    MOCK_CHANNEL.disconnect_all()
+    # MOCK_TABLE = Table("1")
+    # MOCK_CHANNEL = BroadcastChannel(MOCK_TABLE)
+
+    # await MOCK_CHANNEL.connect(websocket)
+    # MOCK_CHANNEL.update()
+    # asyncio.sleep(2)
+    # MOCK_CHANNEL.disconnect_all()
+    pass
+
 
 class ConnectionManager:
     def __init__(self):
@@ -93,7 +94,9 @@ class ConnectionManager:
             else:
                 await connection.send_text(message)
 
+
 manager = ConnectionManager()
+
 
 @game_router.websocket("/ws/")
 async def websocket_endpoint(websocket: WebSocket):
@@ -107,7 +110,8 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         await manager.broadcast("someone left the chat.", websocket)
-        
+
+
 @game_router.websocket("/table/{table_id}/ws")
 async def gamestate_updator(*, websocket: WebSocket, table_id: str):
     pass
