@@ -1,26 +1,32 @@
 #include <iostream>
 #include <sstream>
-#include <string>
-#include <vector>
 
-using namespace std;
+// #include <string>
+// #include <vector>
 
-class Pot {
-public:
-  double value;
-  vector<string> players;
-};
+// using namespace std;
 
-class GameState {
-public:
-  vector<string> players;
-  vector<string> player_cards;
-  vector<double> held_money;
-  vector<double> bet_money;
-  vector<string> community_cards;
-  vector<Pot> pots;
-  string current_round;
-};
+// class Pot {
+// public:
+//   double value;
+//   vector<string> players;
+// };
+
+// class GameState {
+// public:
+//   vector<string> players;
+//   vector<string> player_cards;
+//   vector<double> held_money;
+//   vector<double> bet_money;
+//   vector<string> community_cards;
+//   vector<Pot> pots;
+//   string current_round;
+// };
+
+// ================================ //
+// ACTUAL BOT CODE FUNCTION HERE!!! //
+// ================================ //
+//%insert%//
 
 vector<string> split(string &s) {
   vector<string> tokens;
@@ -86,11 +92,6 @@ void set_state_input(GameState &state) {
 
   getline(cin, state.current_round);
 }
-
-// ================================ //
-// ACTUAL BOT CODE FUNCTION HERE!!! //
-// ================================ //
-int bet(GameState &state) { return -1; }
 
 int main() {
   GameState state;

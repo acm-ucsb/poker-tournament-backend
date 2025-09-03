@@ -1,18 +1,23 @@
-class Pot:
-    value: float
-    players: list[str]
+# class Pot:
+#     value: float
+#     players: list[str]
 
 
-# cards are defined as 1st char: A(2-9)TJQK, 2nd char: SDCH
-# currently does not take into account side pots
-class GameState:
-    players: list[str]  # team_ids
-    player_cards: list[str]
-    held_money: list[float]
-    bet_money: list[float]  # per round, -1 for fold, 0 for check/hasn't bet yet
-    community_cards: list[str]
-    pots: list[Pot]
-    current_round: str  # preflop, flop, turn, river
+# # cards are defined as 1st char: A(2-9)TJQK, 2nd char: SDCH
+# # currently does not take into account side pots
+# class GameState:
+#     players: list[str]  # team_ids
+#     player_cards: list[str]
+#     held_money: list[float]
+#     bet_money: list[float]  # per round, -1 for fold, 0 for check/hasn't bet yet
+#     community_cards: list[str]
+#     pots: list[Pot]
+#     current_round: str  # preflop, flop, turn, river
+
+# ======================= #
+# ACTUAL BOT CODE HERE!!! #
+# ======================= #
+//%insert%//
 
 
 def set_state_input(state: GameState):
@@ -31,13 +36,6 @@ def set_state_input(state: GameState):
         state.pots.append(p)
 
     state.current_round = input()
-
-
-# ================================ #
-# ACTUAL BOT CODE FUNCTION HERE!!! #
-# ================================ #
-def bet(state: GameState) -> int:
-    return -1
 
 
 def main():
