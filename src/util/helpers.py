@@ -1,8 +1,11 @@
 import asyncio
+import os
+import subprocess
 import pathlib
 import datetime
 from fastapi import HTTPException, status
 from src.util.supabase_client import db_client
+from src.util.models import FileRunResult, GameState
 from gotrue import User
 
 
@@ -76,3 +79,72 @@ async def delete_file_with_stem(stem: str) -> str | None:
                 if entry.is_file() and entry.stem == stem:
                     entry.unlink()
                     return entry.name
+
+
+def into_stdin_format(state: GameState) -> str:
+    state_str = ""
+    state_str += " ".join(state.players) + "\n"
+    # only first list of two cards of the current player can be shown!!! so [0]
+    state_str += " ".join(state.players_cards[0]) + "\n"
+    state_str += " ".join(map(str, state.held_money)) + "\n"
+    state_str += " ".join(map(str, state.bet_money)) + "\n"
+    state_str += " ".join(state.community_cards) + "\n"
+    state_str += str(len(state.pots)) + "\n"
+    for pot in state.pots:
+        state_str += str(pot.value) + " "
+        state_str += " ".join(pot.players) + "\n"
+    state_str += state.current_round + "\n"
+
+    return state_str
+
+
+# no mutex for running code, files gets compiled into exe or bytecode on read
+async def run_file(team_id: str, state: GameState) -> FileRunResult:
+    res = await get_file_with_stem(team_id)
+    if res is None:
+        raise ValueError
+    filename = res[0]
+    state_str = into_stdin_format(state)
+
+    if filename.endswith(".py"):
+        process = subprocess.run(
+            ["python3", filename],
+            capture_output=True,
+            input=state_str,
+            text=True,
+            check=True,  # ensure the command raises exception on failure
+            cwd=uploads_dir,  # change directory to uploads
+        )
+        return {
+            "status": "success",
+            "stdout": process.stdout,
+            "stderr": process.stderr,
+            "message": "Python file processed successfully.",
+        }
+    elif filename.endswith(".cpp"):
+        fname_no_ext = filename[:-4]
+        exec_cmd = f"{fname_no_ext}.exe" if os.name == "nt" else f"./{fname_no_ext}"
+
+        process = subprocess.run(
+            f"c++ {filename} -o {fname_no_ext} && {exec_cmd}",
+            shell=True,  # run the command in the shell, not list of args
+            capture_output=True,
+            input=state_str,
+            text=True,
+            check=True,  # ensure the command raises exception on failure
+            cwd=uploads_dir,  # change directory to uploads
+        )
+
+        return {
+            "status": "success",
+            "stdout": process.stdout,
+            "stderr": process.stderr,
+            "message": "C++ file processed successfully.",
+        }
+    else:
+        return {
+            "status": "error",
+            "stdout": None,
+            "stderr": None,
+            "message": "Unsupported file type. Only .py and .cpp files are allowed.",
+        }

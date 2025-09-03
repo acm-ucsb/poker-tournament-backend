@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Any
+from typing import Any, TypedDict
 from fastapi import status
 
 
@@ -43,3 +43,10 @@ class GameState(BaseModel):
     community_cards: list[str]
     pots: list[Pot]
     current_round: str  # preflop, flop, turn, river
+
+
+class FileRunResult(TypedDict):
+    status: str
+    stdout: str | None
+    stderr: str | None
+    message: str
