@@ -89,6 +89,7 @@ void set_state_input(GameState &state) {
 
     pots.emplace_back(p);
   }
+  state.pots = pots;
 
   getline(cin, state.current_round);
 }

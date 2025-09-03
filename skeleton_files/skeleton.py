@@ -28,6 +28,7 @@ def set_state_input(state: GameState):
     state.community_cards = input().split()
 
     num_pots = int(input())
+    state.pots = []
     for _ in range(num_pots):
         pot_input_list = input().split()
         p = Pot()
