@@ -33,11 +33,11 @@ class Pot(BaseModel):
     players: list[str]
 
 
-# cards are defined as 1st char: A(2-9)TJQK, 2nd char: SDCH
+# cards are defined as 1st char: a(2-9)tjqk, 2nd char: sdch
 # currently does not take into account side pots
 class GameState(BaseModel):
     players: list[str]  # team_ids
-    players_cards: list[list[str]]
+    players_cards: list[list[str]]  # list of two card strs per player
     held_money: list[float]
     bet_money: list[float]  # per round, -1 for fold, 0 for check/hasn't bet yet
     community_cards: list[str]
