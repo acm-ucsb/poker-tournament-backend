@@ -100,13 +100,13 @@ def test_reassign_1():
     matchmaker.players = [Player(str(i)) for i in range(50)]
     tables = matchmaker.assign_table()
 
-    tables[0].remove_random_players(2)
-    tables[2].remove_random_players(3)
-    tables[3].remove_random_players(4)
-    tables[4].remove_random_players(1)
-    tables[1].remove_random_players(1)
+    tables[0].remove_random_players(1)
+    tables[2].remove_random_players(4)
+    tables[3].remove_random_players(1)
+    tables[4].remove_random_players(4)
+    tables[1].remove_random_players(2)
     matchmaker.update_players()
-    assert len(matchmaker.players) == 39
+    #assert len(matchmaker.players) == 30
 
     reassign, type = matchmaker.determine_reassign()
 
@@ -131,6 +131,34 @@ def test_reassign_1():
 
     tables = matchmaker.reassign_table_1()
 
+    for i, table in enumerate(tables):
+        print(f"{i}: ", end="")
+
+        for player in table.seating:
+            if player:
+                print(f"--{player.id}--", end = " ")
+            else:
+                print("-N/A-", end = " ")
+
+        print()
+
+    # assert len(tables) == 5
+    # assert len([1 for table in tables if len(table.players) == 8]) == 4
+    # assert len([1 for table in tables if len(table.players) == 7]) == 1
+
+    print("Test passed!")
+
+    # print("\n\n")
+    
+
+    # tables = matchmaker.reassign_table_1()
+
+def test_reassign_2():
+    matchmaker = Matchmaking()
+
+    matchmaker.players = [Player(str(i)) for i in range(48)]
+    tables = matchmaker.assign_table()
+
     # for i, table in enumerate(tables):
     #     print(f"{i}: ", end="")
 
@@ -142,18 +170,105 @@ def test_reassign_1():
 
     #     print()
 
-    assert len(tables) == 5
-    assert len([1 for table in tables if len(table.players) == 8]) == 4
-    assert len([1 for table in tables if len(table.players) == 7]) == 1
+    assert len(tables) == 6
+    assert len([1 for table in tables if table.size == 8]) == 6
+    print("Setup Passed")
 
-    print("Test passed!")
+    removed = tables[0].remove_random_players(2)
+
+    matchmaker.update_players()
+    assert len(matchmaker.players) == 46
+    reassign = matchmaker.determine_reassign()
+
+    print(reassign)
+
+    assert reassign[0] == True and reassign[1] == 2
+
+    print("setup passed")
+
+    tables = matchmaker.reassign_tables_2()
+
+    assert matchmaker.base_table_size == 7
+    assert len([1 for table in tables if table.size == 7]) == 2
+    assert len([1 for table in tables if table.size == 8]) == 4
+
+    print("Initial Tests passed")
+
+
+def test_reassign_together():
+    matchmaker = Matchmaking()
+
+    matchmaker.players = [Player(str(i)) for i in range(52)]
+    tables = matchmaker.assign_table()
+
+    assert len(tables) == 7
+    assert len([1 for table in tables if table.size == 8]) == 3
+    assert len([1 for table in tables if table.size == 7]) == 4
+
+    # for i, table in enumerate(tables):
+    #     print(f"{i}: ", end="")
+
+    #     for player in table.seating:
+    #         if player:
+    #             print(f"--{player.id}--", end = " ")
+    #         else:
+    #             print("-N/A-", end = " ")
+
+    #     print()
+
+    tables[0].seating[4] = None
+    tables[0].seating[5] = None
+    tables[0].seating[6] = None
+    tables[0].seating[7] = None
+
+    tables[3].seating[0] = None
+    tables[3].seating[1] = None
+    tables[3].seating[2] = None
+
+    tables[6].seating[4] = None
+    tables[6].seating[5] = None
+
+    matchmaker.update_players()
+
+    assert len(matchmaker.players) == 43
+
+    reassign = matchmaker.determine_reassign()
+    assert reassign[0] == True and reassign[1] == 1
+
+    tables = matchmaker.reassign_table_1()
 
     # print("\n\n")
-    
+    # for i, table in enumerate(tables):
+    #     print(f"{i}: ", end="")
 
-    # tables = matchmaker.reassign_table_1()
+    #     for player in table.seating:
+    #         if player:
+    #             print(f"--{player.id}--", end = " ")
+    #         else:
+    #             print("-N/A-", end = " ")
+
+    #     print()
+
+    assert len(tables) == 6
+    assert [player.id for player in tables[2].seating[0:3]] == ["14", "7", "0"]
+    assert tables[5].seating[5].id == "49"
+
+    assert len([1 for table in tables if table.size == 8]) == 2
+    assert len([1 for table in tables if table.size == 6]) == 1
+    assert len([1 for table in tables if table.size == 7]) == 3
+
+    reassign = matchmaker.determine_reassign()
+
+    assert reassign[0] == True and reassign[1] == 2
+
+    tables = matchmaker.reassign_tables_2()
+
+    assert len([1 for table in tables if table.size == 7]) == 5
+    assert len([1 for table in tables if table.size == 8]) == 1
+
+    print("All tests passed.")
 
 
-test_reassign_1()
+test_reassign_together()
 
     

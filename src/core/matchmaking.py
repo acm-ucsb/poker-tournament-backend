@@ -7,6 +7,8 @@ from src.core.player import Player
 from dataclasses import dataclass, field
 from typing import Any
 
+from random import sample
+
 @dataclass(order=True)
 class PrioritizedItem:
     priority: int
@@ -26,7 +28,8 @@ class Matchmaking:
 
     # TODO: finish this manual override request
     def _on_player_elimination(self, _=None) -> None:
-        if not self.determine_reassign():
+        reassign, type = self.determine_reassign()
+        if not reassign:
             return
 
         # TODO: Stop game
@@ -34,14 +37,26 @@ class Matchmaking:
         # TODO: add a wait for all games to stop
         self.remove_eliminated_players()
 
-        try:
-            self.reassign_table()
-        except ValueError:
-            # TODO: notify table rebalancing error
-            # Ask for manual override
-            self.reassign_table_manual()
+        if type == 1:
+            try:
+                _ = self.reassign_table_1()
+            except ValueError:
+                # TODO: notify table rebalancing error
+                # Ask for manual override
+                self.reassign_table_manual()
 
-        self.close_unused_tables()
+            self.close_unused_tables() # doesn't matter for type 2 as no tables will be closed
+
+            reassign, type = self.determine_reassign() # should never be (true, 1), can only be 
+                                                       # (true, 2) or (false , 1)
+
+        if type == 2:
+            try:
+                _ = self.reassign_tables_2()
+            except ValueError:
+                # TODO: notify table rebalancing error
+                # Ask for manual override
+                self.reassign_table_manual()
 
         # TODO: Resume game
 
@@ -118,8 +133,8 @@ class Matchmaking:
 
         if num_tables == max_tables + 1:
             raise ValueError("Cannot distribute players within table size constraints.")
-
-        if num_tables < self.base_table_size:
+        
+        if num_tables < len(self.tables):
             return (True, 1)
         if max_table_size - min_table_size > 1:
             return (True, 2)
@@ -171,7 +186,12 @@ class Matchmaking:
 
         return self.tables
 
-    # TODO: test
+    """
+    In the case where there's more tables open than necessary --> close the smallest ones
+    and reassign those players to other tables based on seating priority
+        -> players with higher priority in the closed tables get the higher priority seats in
+            the other tables
+    """
     def reassign_table_1(self) -> list[Table]:
         num_players = len(self.players)
         num_tables = len(self.tables)
@@ -234,6 +254,7 @@ class Matchmaking:
 
 
         base_table_size, extras = divmod(num_players, new_num_tables)
+        self.base_table_size = base_table_size
 
         seats = PriorityQueue()
         for i, table in enumerate(self.tables):
@@ -284,6 +305,41 @@ class Matchmaking:
                 self.tables[seat.item[0]].seating[seat.item[1]] = player.item
 
         return self.tables
+    
+    """
+    In the case where there's too many or too little people in one or more tables
+    --> randomly select players in tables where there's too many people
+    --> move them to seats at empty tables with the highest priority
+    """
+    def reassign_tables_2(self):
+        num_players = len(self.players)
+        num_tables = len(self.tables)
+
+        # want extra number of tables with players_per_table + 1
+        players_per_table, extra = divmod(num_players, num_tables)
+        self.base_table_size = players_per_table
+        if (extra > 0 and players_per_table + 1 > self.MAX_TABLE_SIZE) or players_per_table < self.MIN_TABLE_SIZE:
+            raise ValueError("Need more tables to fit seating restraints")
+        
+        pool = []
+        for table in self.tables:
+            if table.size > players_per_table:
+                pool.extend(table.remove_random_players(table.size - players_per_table))
+        for table in self.tables:
+            if table.size < players_per_table:
+                needed = players_per_table - table.size
+                table.add_players(pool[:needed])
+                pool = pool[needed:]
+
+        if len(pool) != 0:
+            population = range(len(self.tables)) # all tables will have the same number of people atp
+            tables = sample(population, len(pool))
+
+            for table, player in zip(tables, pool):
+                self.tables[table].add_player(player)
+
+        return self.tables
+
 
     # TODO
     def reassign_table_manual(self, /) -> list[Table]:
