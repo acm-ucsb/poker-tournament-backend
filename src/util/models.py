@@ -22,27 +22,20 @@ class SubmittedFile(BaseModel):
     content: str
 
 
-# class Card(BaseModel):
-#     repr: str
-#     rank: int = Field(..., ge=1, le=13)
-#     suit: int = Field(..., ge=1, le=4)
-
-
 class Pot(BaseModel):
-    value: float
-    players: list[str]
+    value: float  # money in pot
+    players: list[str]  # players vying for this pot, team_ids
 
 
 # cards are defined as 1st char: a(2-9)tjqk, 2nd char: sdch
-# currently does not take into account side pots
 class GameState(BaseModel):
     players: list[str]  # team_ids
-    players_cards: list[list[str]]  # list of two card strs per player
-    held_money: list[float]
-    bet_money: list[float]  # per round, -1 for fold, 0 for check/hasn't bet yet
+    players_cards: list[list[str]]  # list of two card strs per team by index
+    held_money: list[float]  # money per team by index
+    bet_money: list[float]  # per round by index, -1 for fold, 0 for check/hasn't bet
     community_cards: list[str]
-    pots: list[Pot]
-    current_round: str  # preflop, flop, turn, river
+    pots: list[Pot]  # list for the case of sidepots
+    current_round: str  # for convenience: preflop, flop, turn, river
 
 
 class FileRunResult(TypedDict):

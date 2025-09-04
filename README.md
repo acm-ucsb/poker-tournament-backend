@@ -19,7 +19,41 @@ Makefile has most of the required stuff needed to run.
 - `run`: prod server
 - `format`: ruff to format all python code
 
-## backend overview
+## backend details
+
+### GameState schema
+
+This is the internal schema for the json sent to frontend, and the state object managed in the backend.
+
+```py
+class Pot(BaseModel):
+    value: float  # money in pot
+    players: list[str]  # players vying for this pot, team_ids
+
+
+# cards are defined as 1st char: a(2-9)tjqk, 2nd char: sdch
+class GameState(BaseModel):
+    players: list[str]  # team_ids
+    players_cards: list[list[str]]  # list of two card strs per team by index
+    held_money: list[float]  # money per team by index
+    bet_money: list[float]  # per round by index, -1 for fold, 0 for check/hasn't bet
+    community_cards: list[str]
+    pots: list[Pot]  # list for the case of sidepots
+    current_round: str  # for convenience: preflop, flop, turn, river
+```
+
+The bot code functions get almost the same schema, EXCEPT `GameState.players_cards` becomes `player_cards` and is just a list of str. In cpp, list becomes vector.
+
+### code execution structure
+
+- NO SAFE GUARDS ON THE CODE!!!
+- should be manual checks for no malicious code before running!!!
+- submission saves original submitted code file `<team_id>.<py/cpp>` and the `wrapped_<team_id>.<py/cpp>`
+- `skeleton_files`: bot code (given to participants) which is inserted into the line of skeleton file that starts with `//%insert%//` (only first occurrence)
+- the wrapped file is run with i/o to the bot function with stdin/stdout
+- deleting original file doesn't delete the wrapped file, so they technically can still be run (but it don't matter much)
+- models for `Pot` and `GameState` for the function are the same for internal, except `players_cards` becomes a single list of the bots' own cards as `player_cards`, not a list of lists
+  - vector for cpp
 
 ### very broad baseline api
 
