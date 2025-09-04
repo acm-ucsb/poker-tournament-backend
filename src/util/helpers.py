@@ -99,6 +99,7 @@ def save_insert_into_skeleton(team_id: str, suffix: str, content: str):
     for i in range(len(lines)):
         if lines[i].startswith(r"//%insert%//"):  # the special insert string
             lines = lines[:i] + content_lines + lines[i + 1 :]
+            break
 
     wrap_path = uploads_dir / f"wrapped_{team_id}{suffix}"
     with wrap_path.open("w", encoding="utf-8") as f:
