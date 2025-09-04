@@ -132,44 +132,57 @@ async def run_file(team_id: str, state: GameState) -> FileRunResult:
     state_str = into_stdin_format(state)
 
     if filename.endswith(".py"):
-        process = subprocess.run(
-            ["python3", filename],
-            capture_output=True,
-            input=state_str,
-            text=True,
-            check=True,  # ensure the command raises exception on failure
-            cwd=uploads_dir,  # change directory to uploads
-        )
-        return {
-            "status": "success",
-            "stdout": process.stdout,
-            "stderr": process.stderr,
-            "message": "Python file processed successfully.",
-        }
+        try:
+            process = subprocess.run(
+                ["python3", filename],
+                capture_output=True,
+                input=state_str,
+                text=True,
+                check=True,  # ensure the command raises exception on failure
+                cwd=uploads_dir,  # change directory to uploads
+            )
+            return {
+                "status": "success",
+                "stdout": process.stdout,
+                "stderr": process.stderr,
+                "message": "Python file processed successfully.",
+            }
+        except subprocess.CalledProcessError as e:
+            return {
+                "status": "error",
+                "stdout": e.stdout,
+                "stderr": e.stderr,
+                "message": f"Python run failed with exit code {e.returncode}: {e.cmd}",
+            }
     elif filename.endswith(".cpp"):
         fname_no_ext = filename[:-4]
         exec_cmd = f"{fname_no_ext}.exe" if os.name == "nt" else f"./{fname_no_ext}"
 
-        process = subprocess.run(
-            f"c++ {filename} -o {fname_no_ext} && {exec_cmd}",
-            shell=True,  # run the command in the shell, not list of args
-            capture_output=True,
-            input=state_str,
-            text=True,
-            check=True,  # ensure the command raises exception on failure
-            cwd=uploads_dir,  # change directory to uploads
-        )
-
-        return {
-            "status": "success",
-            "stdout": process.stdout,
-            "stderr": process.stderr,
-            "message": "C++ file processed successfully.",
-        }
+        try:
+            process = subprocess.run(
+                f"c++ {filename} -o {fname_no_ext} && {exec_cmd}",
+                shell=True,  # run the command in the shell, not list of args
+                capture_output=True,
+                input=state_str,
+                text=True,
+                check=True,  # ensure the command raises exception on failure
+                cwd=uploads_dir,  # change directory to uploads
+            )
+            return {
+                "status": "success",
+                "stdout": process.stdout,
+                "stderr": process.stderr,
+                "message": "C++ file processed successfully.",
+            }
+        except subprocess.CalledProcessError as e:
+            return {
+                "status": "error",
+                "stdout": e.stdout,
+                "stderr": e.stderr,
+                "message": f"C++ run failed with exit code {e.returncode}: {e.cmd}",
+            }
     else:
         return {
             "status": "error",
-            "stdout": None,
-            "stderr": None,
             "message": "Unsupported file type. Only .py and .cpp files are allowed.",
         }
