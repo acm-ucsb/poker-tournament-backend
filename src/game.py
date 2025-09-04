@@ -10,9 +10,10 @@ from src.util import models
 game_router = APIRouter(prefix="/game", tags=["game"])
 
 
-@game_router.get("/{game_id}", response_model=models.GameState)
+@game_router.get("/{game_id}/", response_model=models.GameState)
 def read_gamestate(game_id: int):
     return models.GameState(
+        index_to_action=0,
         players=[],
         players_cards=[],
         held_money=[],
@@ -20,10 +21,12 @@ def read_gamestate(game_id: int):
         pots=[],
         community_cards=[],
         current_round="preflop",
+        small_blind=5,
+        big_blind=10,
     )
 
 
-@game_router.post("/{game_id}/next", response_model=str)
+@game_router.post("/{game_id}/next/", response_model=str)
 def next_move(game_id: int, moves: int):
     # Define the name of the directory
     directory_name = os.path.join("test_data")

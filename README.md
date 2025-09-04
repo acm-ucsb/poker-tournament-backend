@@ -33,6 +33,7 @@ class Pot:
 
 # cards are defined as 1st char: a(2-9)tjqk, 2nd char: sdch
 class GameState:
+    index_to_action: int
     players: list[str]  # team_ids
     players_cards: list[list[str]]  # list of two card strs per team by index
     held_money: list[float]  # money per team by index
@@ -40,6 +41,8 @@ class GameState:
     community_cards: list[str]
     pots: list[Pot]  # list for the case of sidepots
     current_round: str  # for convenience: preflop, flop, turn, river
+    small_blind: float
+    big_blind: float
 ```
 
 The bot code functions get almost the same schema, EXCEPT `GameState.players_cards` becomes `player_cards` and is just a list of str. In cpp, list becomes vector.

@@ -3,16 +3,17 @@
 #     players: list[str]
 
 
-# # cards are defined as 1st char: A(2-9)TJQK, 2nd char: SDCH
-# # currently does not take into account side pots
 # class GameState:
-#     players: list[str]  # team_ids
+#     index_to_action: int
+#     players: list[str]
 #     player_cards: list[str]
 #     held_money: list[float]
-#     bet_money: list[float]  # per round, -1 for fold, 0 for check/hasn't bet yet
+#     bet_money: list[float]
 #     community_cards: list[str]
 #     pots: list[Pot]
-#     current_round: str  # preflop, flop, turn, river
+#     current_round: str
+#     small_blind: float
+#     big_blind: float
 
 # ======================= #
 # ACTUAL BOT CODE HERE!!! #
@@ -21,6 +22,7 @@
 
 
 def set_state_input(state: GameState):
+    state.index_to_action = int(input())
     state.players = input().split()
     state.player_cards = input().split()
     state.held_money = list(map(float, input().split()))
@@ -37,6 +39,8 @@ def set_state_input(state: GameState):
         state.pots.append(p)
 
     state.current_round = input()
+    state.small_blind = float(input())
+    state.big_blind = float(input())
 
 
 def main():
