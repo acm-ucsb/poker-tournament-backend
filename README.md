@@ -26,13 +26,13 @@ Makefile has most of the required stuff needed to run.
 This is the internal schema for the json sent to frontend, and the state object managed in the backend.
 
 ```py
-class Pot(BaseModel):
+class Pot:
     value: float  # money in pot
     players: list[str]  # players vying for this pot, team_ids
 
 
 # cards are defined as 1st char: a(2-9)tjqk, 2nd char: sdch
-class GameState(BaseModel):
+class GameState:
     players: list[str]  # team_ids
     players_cards: list[list[str]]  # list of two card strs per team by index
     held_money: list[float]  # money per team by index
