@@ -1,34 +1,33 @@
 from random import randint
-
 from pydantic import BaseModel, Field
 
 SUIT = {
-    1: "S",
-    2: "H",
-    3: "D",
-    4: "C",
+    0: "S",
+    1: "H",
+    2: "D",
+    3: "C",
 }
 
 RANK = {
-    13: "A",
-    12: "K",
-    11: "Q",
-    10: "J",
-    9: "10",
-    8: "9",
-    7: "8",
-    6: "7",
-    5: "6",
-    4: "5",
-    3: "4",
-    2: "3",
-    1: "2",
+    12: "A",
+    11: "K",
+    10: "Q",
+    9: "J",
+    8: "10",
+    7: "9",
+    6: "8",
+    5: "7",
+    4: "6",
+    3: "5",
+    2: "4",
+    1: "3",
+    0: "2",
 }
 
 
 class Card(BaseModel):
-    rank: int = Field(..., ge=1, le=13)
-    suit: int = Field(..., ge=1, le=4)
+    rank: int = Field(..., ge=0, le=12)
+    suit: int = Field(..., ge=0, le=3)
 
 
 class Deck:
