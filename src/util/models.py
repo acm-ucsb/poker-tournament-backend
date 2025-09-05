@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Any
+from typing import Any, TypedDict, NotRequired
 from fastapi import status
 
 
@@ -22,24 +22,27 @@ class SubmittedFile(BaseModel):
     content: str
 
 
-# class Card(BaseModel):
-#     repr: str
-#     rank: int = Field(..., ge=1, le=13)
-#     suit: int = Field(..., ge=1, le=4)
-
-
 class Pot(BaseModel):
-    value: float
-    players: list[str]
+    value: float  # money in pot
+    players: list[str]  # players vying for this pot, team_ids
 
 
-# cards are defined as 1st char: A(2-9)TJQK, 2nd char: SDCH
-# currently does not take into account side pots
+# cards are defined as 1st char: a(2-9)tjqk, 2nd char: sdch
 class GameState(BaseModel):
+    index_to_action: int
     players: list[str]  # team_ids
-    players_cards: list[list[str]]
-    held_money: list[float]
-    bet_money: list[float]  # per round, -1 for fold, 0 for check/hasn't bet yet
+    players_cards: list[list[str]]  # list of two card strs per team by index
+    held_money: list[float]  # money per team by index
+    bet_money: list[float]  # per round by index, -1 for fold, 0 for check/hasn't bet
     community_cards: list[str]
-    pots: list[Pot]
-    current_round: str  # preflop, flop, turn, river
+    pots: list[Pot]  # list for the case of sidepots
+    current_round: str  # for convenience: preflop, flop, turn, river
+    small_blind: float
+    big_blind: float
+
+
+class FileRunResult(TypedDict):
+    status: str
+    stdout: NotRequired[str]
+    stderr: NotRequired[str]
+    message: str
