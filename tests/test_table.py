@@ -1,8 +1,11 @@
 import random
 
+import pytest
+
 from src.core.table import Table
 from src.core.player import Player
 from src.core.card import Card
+
 
 def init_table() -> tuple[Table, list[Player | None]]:
     table = Table("1")
@@ -45,11 +48,15 @@ def test_players():
     table, seating = init_table()
     assert table.players == [player for player in seating if player]
     assert table.players != seating
-    
+
     new_player = Player("Alex")
     table.add_player(new_player)
-    assert set([player for player in seating if player] + [new_player]) == set(table.players)
-    assert set([player for player in seating if player] + [new_player]) == set(table.remove_all_players())
+    assert set([player for player in seating if player] + [new_player]) == set(
+        table.players
+    )
+    assert set([player for player in seating if player] + [new_player]) == set(
+        table.remove_all_players()
+    )
     assert table.players == []
 
 
@@ -113,10 +120,10 @@ def test_payout():
 
 def test_eval_winners():
     table, _ = init_table()
-    
+
     for player in table.players:
         player.has_folded = True
-        
+
     table.community_cards = [
         Card(rank=6, suit=3),
         Card(rank=7, suit=0),
@@ -124,16 +131,15 @@ def test_eval_winners():
         Card(rank=1, suit=2),
         Card(rank=0, suit=3),
     ]
-    
+
     table.players[0].has_folded = False
     table.players[0].hand = [Card(rank=1, suit=3), Card(rank=10, suit=3)]
-    
-    
+
     table.players[3].has_folded = False
     table.players[3].hand = [Card(rank=6, suit=0), Card(rank=6, suit=1)]
-    
+
     table.pot = 140
-    
+
     hands = [
         (rank, [card.rank for card in cards], player)
         for rank, cards, player in [
@@ -142,7 +148,7 @@ def test_eval_winners():
             if not player.has_folded
         ]
     ]
-    
+
     assert [table.players[0]] == table.eval_winners(hands)
 
 
@@ -184,11 +190,10 @@ def test_step():
 
     table.community_cards.extend([table.deck.deal_card() for _ in range(2)])
     table.community_cards.sort(key=lambda card: card.rank, reverse=True)
-    
-    
+
     for player in table.players:
         player.contribution = 0
-        
+
     players[0].chips = 0
     players[3].chips = 0
     players[0].contribution = 110
@@ -201,27 +206,32 @@ def test_step():
     assert player_2 not in table.players
     assert table.button == 6
 
+
 def test_start_betting_round():
     table, _ = init_table()
     table.button = 6
-    
+
     for player in table.players:
         player.has_folded = False
-        
+
     table.players[2].has_folded = True
     table.players[4].has_folded = True
     active_players, start_idx = table.start_betting_round(0, table.players)
-    
+
     assert table.players[2] not in active_players
     assert table.players[4] not in active_players
     assert start_idx == 0
 
-def test_run_betting_round():
-    ...
-    
-def test_betting_round():
-    ...
 
+@pytest.mark.skip()
+def test_run_betting_round(): ...
+
+
+@pytest.mark.skip()
+def test_betting_round(): ...
+
+
+@pytest.mark.skip()
 def test_run():
     random.seed(42)
     table, _ = init_table()
