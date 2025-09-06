@@ -6,7 +6,7 @@ from src.core.card import RANK, SUIT
 
 if TYPE_CHECKING:
     from typing import Optional
-    
+
     from src.core.card import Card
 
 
@@ -64,9 +64,9 @@ class Player:
         self.has_folded = False
         self.contribution = 0
 
-    #TODO: change this to async and implement a timeout
+    # TODO: change this to async and implement a timeout
     def act(self) -> Action:
-        """ implemented as a terminal input for testing purposes --> CHANGE LATER"""
+        """implemented as a terminal input for testing purposes --> CHANGE LATER"""
 
         """ Possible actions:
         0. Fold
@@ -76,24 +76,24 @@ class Player:
 
         Returns: Action object
         """
-
-        choice = input(
-            f"Player {self.id}, you have {self.chips} chips. Enter your action (0: Fold, 1: Check, 2: Call, 3: Raise): "
-        )
-        action = int(choice)
-        if action == 0:
-            return Action(action=ActionType.FOLD)
-        elif action == 1:
-            return Action(action=ActionType.CHECK)
-        elif action == 2:
-            return Action(action=ActionType.CALL)
-        elif action == 3:
-            amount = int(
-                input(f"Player {self.id}, enter the amount you want to raise: ")
-            )
-            # self.chips -= amount
-            # self.contribution += amount
-            return Action(action=ActionType.RAISE, amount=amount)
+        ...
+        # choice = input(
+        #     f"Player {self.id}, you have {self.chips} chips. Enter your action (0: Fold, 1: Check, 2: Call, 3: Raise): "
+        # )
+        # action = int(choice)
+        # if action == 0:
+        #     return Action(action=ActionType.FOLD)
+        # elif action == 1:
+        #     return Action(action=ActionType.CHECK)
+        # elif action == 2:
+        #     return Action(action=ActionType.CALL)
+        # elif action == 3:
+        #     amount = int(
+        #         input(f"Player {self.id}, enter the amount you want to raise: ")
+        #     )
+        #     # self.chips -= amount
+        #     # self.contribution += amount
+        #     return Action(action=ActionType.RAISE, amount=amount)
 
     def force_bet(self, amount: int) -> int:
         """Force player to bet `amount`, if not possible player goes all in.
@@ -124,11 +124,17 @@ class Player:
         ]
         hand = self.hand + community_cards
         hand.sort(key=lambda card: card.rank, reverse=True)
+
+        result: tuple[int, list[Card]] = (-1, [])
+
         for idx, build in enumerate(build_order):
             best_hand = build(hand)
             if len(best_hand) == 5:
                 hand_rank = len(build_order) - idx
-                return (hand_rank, best_hand)
+                result = (hand_rank, best_hand)
+                break
+
+        return result
 
     @staticmethod
     def _build_straight_flush(cards: list[Card]) -> list[Card]:
@@ -220,7 +226,7 @@ class Player:
         """Precondition: cards are sorted using rank descending."""
         hand = [cards[0]]
         for card in cards[1:]:
-            #next card in straight
+            # next card in straight
             if hand[-1].rank - 1 == card.rank:
                 hand.append(card)
             else:
@@ -266,7 +272,7 @@ class Player:
 
         best_rank_1, best_rank_2 = -1, -1
         for rank, count in reversed(list(enumerate(ranks))):
-            if count == 2: # has to be exactly 2 to avoid full house
+            if count == 2:  # has to be exactly 2 to avoid full house
                 if best_rank_1 == -1:
                     best_rank_1 = rank
                 elif best_rank_2 == -1:
