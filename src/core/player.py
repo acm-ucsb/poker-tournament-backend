@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, Field
+from typing import Optional
+
 from src.core.card import RANK, SUIT
 
 if TYPE_CHECKING:
-    from typing import Optional
-
+    from src.core.table import TableState
     from src.core.card import Card
 
 
@@ -19,7 +22,7 @@ class ActionType(Enum):
 
 class Action(BaseModel):
     action: ActionType
-    amount: Optional[int] = None
+    amount: int
 
 
 class PlayerData(BaseModel):
@@ -42,6 +45,12 @@ class Player:
         self.has_folded: bool = False
 
         self.contribution: int = 0
+        
+    def __str__(self) -> str:
+        return f"Player(id: {self.id}, chips: {self.chips}, contribution: {self.contribution}, hand: {self.hand}, is_eliminated: {self.is_eliminated}, has_folded: {self.has_folded})"
+    
+    def __repr__(self) -> str:
+        return self.__str__()
 
     @property
     def is_all_in(self):
@@ -65,7 +74,7 @@ class Player:
         self.contribution = 0
 
     # TODO: change this to async and implement a timeout
-    def act(self) -> Action:
+    def act(self, table_state: TableState) -> Action:
         """implemented as a terminal input for testing purposes --> CHANGE LATER"""
 
         """ Possible actions:

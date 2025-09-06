@@ -158,5 +158,6 @@ class BroadcastChannel:
             "code": payload._code.value,
             "info": payload.model_dump(mode="json", by_alias=True),
         }
-
-        asyncio.create_task(self._broadcast(msg))
+        
+        if self.connections:
+            asyncio.create_task(self._broadcast(msg))
