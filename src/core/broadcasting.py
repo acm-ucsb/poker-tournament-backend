@@ -38,7 +38,7 @@ class UpdateCode(Enum):
 
 
 class BasePayload(BaseModel):
-    _code: UpdateCode
+    _code: UpdateCode = PrivateAttr()
 
 
 class TableClosedPayload(BasePayload):
