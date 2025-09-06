@@ -5,15 +5,14 @@ from math import floor, ceil
 from random import randint
 
 from pydantic import BaseModel, Field
-""" UNCOMMENT EVERYTHING TO DO WITH BROADCASTING WHEN NEEDED """
-# from src.core.broadcasting import BroadcastChannel, UpdateData UNCOMMENT LATER
+
+from src.core import broadcasting
 from src.core.card import Deck, RANK, SUIT
-from src.core.player import ActionType
+from src.core.player import ActionType, PlayerData
 
 if TYPE_CHECKING:
-    from src.core.broadcasting import BasePayload
     from src.core.card import Card
-    from src.core.player import Player, PlayerData
+    from src.core.player import Player
 
 
 class TableState(BaseModel):
@@ -63,7 +62,7 @@ class Table:
         )
         self.current_call: int = 0
 
-         # self.broadcaster = BroadcastChannel() UNCOMMENT LATER
+        self.broadcaster = broadcasting.BroadcastChannel()
 
         self.pot: int = 0
 
@@ -90,7 +89,6 @@ class Table:
         """
         n = len(self.seating)
         small_blind = (self.button + 1) % n
-        print(self.seating[small_blind])
         while not self.seating[small_blind]:
             small_blind = (small_blind + 1) % n
 
@@ -126,16 +124,22 @@ class Table:
                 RANK[card.rank] + SUIT[card.suit] for card in self.community_cards
             ],
         )
+
     """ Used for testing """
+
     def __str__(self) -> str:
         s = f"\nTable {self.id}: \n"
         for player in self.seating:
             if player is not None:
-                s += f"{(player.id, 
-                         player.chips, 
-                         player.contribution,
-                         [str(card) for card in player.hand], 
-                         'I' if not player.has_folded else 'F')}, "
+                s += f"{
+                    (
+                        player.id,
+                        player.chips,
+                        player.contribution,
+                        [str(card) for card in player.hand],
+                        'I' if not player.has_folded else 'F',
+                    )
+                }, "
         s += "\n"
         s += f"Community Cards: {[str(card) for card in self.community_cards]}\n"
         s += f"Action: {self.current_player.id if self.current_player else 'None'}\n"
@@ -145,33 +149,9 @@ class Table:
 
         return s
 
-    # TODO: test
-    def payout(self) -> list[tuple[Player, int]]:
-        """
-        Returns: a list describing how much a player was paid
-        """
-        hands = [
-            (rank, [card.rank for card in cards], player)
-            for rank, cards, player in [
-                (*player.build_best_hand(self.community_cards), player)
-                for player in self.players
-                if not player.has_folded
-            ]
-        ]
-
-        paid = 0
-        players_paid = []
-        while self.pot > 0:
-            winners = self._eval_winners(hands)
-            # non-folded losers
-            hands = [hand for hand in hands if hand[2] not in winners]
-            current_paid, current_player_paid = self.payout_helper(winners, paid)
-            paid += current_paid
-            players_paid.extend(current_player_paid)
-            
-        return players_paid
-
-    def payout_helper(self, winners: list[Player], paid=0) -> tuple[int, list[tuple[Player, int]]]:
+    def payout_helper(
+        self, winners: list[Player], paid=0
+    ) -> tuple[int, list[tuple[Player, int]]]:
         """Distribute the pot to winners according to their contribution.
         Returns:
             - The total amount paid to all the winners.
@@ -216,8 +196,34 @@ class Table:
         return (total_paid - paid, players_paid)
 
     # TODO: test
+    def payout(self) -> list[tuple[Player, int]]:
+        """
+        Returns: a list describing how much a player was paid
+        """
+        hands = [
+            (rank, [card.rank for card in cards], player)
+            for rank, cards, player in [
+                (*player.build_best_hand(self.community_cards), player)
+                for player in self.players
+                if not player.has_folded
+            ]
+        ]
+
+        paid = 0
+        players_paid = []
+        while self.pot > 0:
+            winners = self.eval_winners(hands)
+            # non-folded losers
+            # hands = [hand for hand in hands if hand[2] not in winners]
+            current_paid, current_player_paid = self.payout_helper(winners, paid)
+            paid += current_paid
+            players_paid.extend(current_player_paid)
+
+        return players_paid
+
+    # TODO: test
     def eval_winners(self, hands: list[tuple[int, list[int], Player]]) -> list[Player]:
-        def eval_tie_break(hand_1: list[Card], hand_2: list[Card]) -> int:
+        def eval_tie_break(hand_1: list[int], hand_2: list[int]) -> int:
             for card_1, card_2 in zip(hand_1, hand_2):
                 if card_1 > card_2:
                     return -1
@@ -252,7 +258,7 @@ class Table:
 
         for player in self.players:
             player.new_hand()
-        
+
         self.broadcaster.update(broadcasting.NewHandPayload())
 
         # deal cards to players
@@ -264,7 +270,9 @@ class Table:
                 cards_dealt.append(dealt_card)
                 player.hand.append(self.deck.deal_card())
             cards_dealt = []
-            self.broadcaster.update(broadcasting.HandDealtPayload(player_id=player.id, cards=cards_dealt))
+            self.broadcaster.update(
+                broadcasting.HandDealtPayload(player_id=player.id, cards=cards_dealt)
+            )
 
         # force blinds to post
         blinds_idx = self.blinds
@@ -274,8 +282,20 @@ class Table:
         self.pot += sb.force_bet(sb_amount)
         self.pot += bb.force_bet(bb_amount)
 
-        self.broadcaster.update(broadcasting.PlayerActedPayload(player_id=sb.id, action="CALL" if not sb.is_all_in else "ALL-IN", amount=sb.contribution))
-        self.broadcaster.update(broadcasting.PlayerActedPayload(player_id=bb.id, action="CALL" if not bb.is_all_in else "ALL-IN", amount=bb.contribution))
+        self.broadcaster.update(
+            broadcasting.PlayerActedPayload(
+                player_id=sb.id,
+                action="CALL" if not sb.is_all_in else "ALL-IN",
+                amount=sb.contribution,
+            )
+        )
+        self.broadcaster.update(
+            broadcasting.PlayerActedPayload(
+                player_id=bb.id,
+                action="CALL" if not bb.is_all_in else "ALL-IN",
+                amount=bb.contribution,
+            )
+        )
 
         self.current_call = bb_amount
 
@@ -285,67 +305,85 @@ class Table:
         ]
         self.last_player_to_raise = None
 
-    # clean up after the last round
     def end_hand(self):
+        """Clean up after the last round.
+        - Pay the winners
+        - Remove eliminated players
+        - Move button, sm, bb
+        """
         self.broadcaster.update(broadcasting.ShowdownPayload())
         winners = self.payout()
-        self.broadcaster.update(broadcasting.PayoutPayload(payouts=[broadcasting.Payout(player_id=player.id, amount=payout) for player, payout in winners]))
-        
+        self.broadcaster.update(
+            broadcasting.PayoutPayload(
+                payouts={player.id: payout for player, payout in winners}
+            )
+        )
+
         for idx, player in enumerate(self.seating):
             if player is None:
                 continue
             if player.chips == 0:
                 player.is_eliminated = True
                 self.seating[idx] = None
-                self.broadcaster.update(broadcasting.PlayerEliminatedPayload(player_id=player.id))
+                self.broadcaster.update(
+                    broadcasting.PlayerEliminatedPayload(player_id=player.id)
+                )
 
         # TODO : notify matchmaking of eliminated players from "master" matchmaking object
         # assuming matchmaking object is the one that created this table
         #   -> some static variable in Table class for callback?
-        
+
         # move the button
         self.button = (self.button + 1) % len(self.seating)
         while self.seating[self.button] is None:
             self.button = (self.button + 1) % len(self.seating)
-            
-        self.broadcaster.update(broadcasting.ButtonMovedPayload(button_seat=self.button, big_blind_seat=self.big_blind, small_blind_seat=self.small_blind))
+
+        self.broadcaster.update(
+            broadcasting.ButtonMovedPayload(
+                button_seat=self.button,
+                big_blind_seat=self.big_blind,
+                small_blind_seat=self.small_blind,
+            )
+        )
 
         # self.current_player = self.seating[self.button] # NOTE: prlb don't need this?
 
-    def start_betting_round(self, current_round: int, active_players: list[Player]) -> tuple[list[Player], int]:
+    def start_betting_round(
+        self, current_round: int, active_players: list[Player]
+    ) -> tuple[list[Player], int]:
         """
+        - Deal cc
+        - Remove folded players from `active_players`
+        - Calculate starting player
         Args:
-            round: [0-2]
-                - 0: flop
-                - 1: turn
-                - 2: river
+            round: [0-2]: where 0 == flop, 1 == turn, and 2 == river.
         Returns:
-            - A list of active players
-            - The starting player index
+        - A list of active players
+        - The starting player index of the active player list.
         """
-        
+
         cards_deal_mapping = [3, 1, 1]
         cards_dealt = []
-        
+
         for _ in range(cards_deal_mapping[current_round]):
-            self.deck.deal_card() # burn
+            self.deck.deal_card()  # burn
             dealt_card = self.deck.deal_card()
             self.community_cards.append(dealt_card)
             cards_dealt.append(dealt_card)
-        
+
         self.broadcaster.update(broadcasting.CCDealtPayload(cards=cards_dealt))
-        
+
         active_players = [player for player in active_players if not player.has_folded]
-        
+
         # next active player past button
         idx = (self.button + 1) % self.max_size
         current_player = self.seating[idx]
         while current_player is None or current_player.has_folded:
             idx = (idx + 1) % self.max_size
             current_player = self.seating[idx]
-        
+
         current_player_idx = active_players.index(current_player)
-        
+
         return (active_players, current_player_idx)
 
     # TODO: test
@@ -357,20 +395,22 @@ class Table:
             - need a raise variable to check how much to call
         """
         self.start_hand()
-        
+
         # pre-flop
         current_player_idx = self.players.index(self.current_player)
         active_players = self.players.copy()
-        
+
         self.run_betting_round(active_players, current_player_idx)
-        
+
         if len([player for player in active_players if not player.has_folded]) == 1:
             self.end_hand()
             return
 
         # flop, turn, river
         for current_round in range(3):
-            active_players, current_player_idx = self.start_betting_round(current_round, active_players)
+            active_players, current_player_idx = self.start_betting_round(
+                current_round, active_players
+            )
             self.run_betting_round(active_players, current_player_idx)
             if len([player for player in active_players if not player.has_folded]) == 1:
                 break
@@ -378,7 +418,9 @@ class Table:
         self.end_hand()
 
     # handles the betting round logic
-    def run_betting_round(self, active_players: list[Player], starting_player_idx: int) -> None:
+    def run_betting_round(
+        self, active_players: list[Player], starting_player_idx: int
+    ) -> None:
         current_player_idx = starting_player_idx
         ended = False
         while not ended:
@@ -387,42 +429,71 @@ class Table:
                     current_player_idx = (current_player_idx + 1) % len(active_players)
                     self.current_player = active_players[current_player_idx]
                     continue
-                
+
                 action = player.act(self.state)
                 match action.action:
                     case ActionType.CHECK:
-                        self.broadcaster.update(broadcasting.PlayerActedPayload(action="CHECK", amount=0))
+                        self.broadcaster.update(
+                            broadcasting.PlayerActedPayload(
+                                player_id=player.id, action="CHECK", amount=0
+                            )
+                        )
 
                     case ActionType.CALL:
                         self.pot += action.amount
-                        self.broadcaster.update(broadcasting.PlayerActedPayload(action="CALL", amount=action.amount))
+                        self.broadcaster.update(
+                            broadcasting.PlayerActedPayload(
+                                player_id=player.id, action="CALL", amount=action.amount
+                            )
+                        )
                         if player.is_all_in:
-                            self.broadcaster.update(broadcasting.PlayerActedPayload(action="ALL-IN", amount=0))
-                        
+                            self.broadcaster.update(
+                                broadcasting.PlayerActedPayload(
+                                    player_id=player.id, action="ALL-IN", amount=0
+                                )
+                            )
+
                         # NOTE: not sure if we need this?
                         if self.last_player_to_raise is None:
                             self.last_player_to_raise = (
                                 player  # allows big blind to raise pre-flop
                             )
                     case ActionType.FOLD:
-                        self.broadcaster.update(broadcasting.PlayerActedPayload(action="FOLD", amount=0))
+                        self.broadcaster.update(
+                            broadcasting.PlayerActedPayload(
+                                player_id=player.id, action="FOLD", amount=0
+                            )
+                        )
                         # lazy deletion to make index tracking easier
                     case ActionType.RAISE:
                         self.pot += action.amount
                         self.current_call = player.contribution
                         self.last_player_to_raise = player
-                        self.broadcaster.update(broadcasting.PlayerActedPayload(action="RAISE", amount=action.amount))
+                        self.broadcaster.update(
+                            broadcasting.PlayerActedPayload(
+                                player_id=player.id,
+                                action="RAISE",
+                                amount=action.amount,
+                            )
+                        )
                         if player.is_all_in:
-                            self.broadcaster.update(broadcasting.PlayerActedPayload(action="ALL-IN", amount=0))
+                            self.broadcaster.update(
+                                broadcasting.PlayerActedPayload(
+                                    player_id=player.id, action="ALL-IN", amount=0
+                                )
+                            )
                         # betting reopens for all other active players
-                        
+
                 current_player_idx = (current_player_idx + 1) % len(active_players)
                 self.current_player = active_players[current_player_idx]
 
                 if self.current_player == self.last_player_to_raise:
                     ended = True
                     break
-                if len([player for player in active_players if not player.has_folded]) == 1:
+                if (
+                    len([player for player in active_players if not player.has_folded])
+                    == 1
+                ):
                     ended = True
                     break
 
@@ -438,14 +509,18 @@ class Table:
         """
         # seat right after big blind is given lowest priority
         size = len(self.seating)
-        start = (self.big_blind + 1)%size if self.current_player else (self.button + 3)%size
+        start = (
+            (self.big_blind + 1) % size
+            if self.current_player
+            else (self.button + 3) % size
+        )
         vacant = []
         n = len(self.seating)
         for i in range(start, n + start):
             if self.seating[i % n] is None:
                 vacant.append(i % n)
 
-        return vacant[::-1] # sorted in priority order
+        return vacant[::-1]  # sorted in priority order
 
     # TODO: test
     def add_player(self, player: Player) -> None:
@@ -482,13 +557,11 @@ class Table:
         if self.size == 0:
             raise IndexError("No more player left to remove")
 
-        n = len(self.seating)
-        selected = randint(0, n-1)
-        while not self.seating[selected]:
-            selected = randint(0, n-1)
+        n = len(self.players)
+        selected = randint(0, n - 1)
 
-        player = self.seating[selected]
-        self.seating[selected]= None
+        player = self.players[selected]
+        self.seating.remove(player)
 
         return player
 
@@ -505,6 +578,6 @@ class Table:
         return [self.remove_random_player() for _ in range(n)]
 
     def remove_all_players(self) -> list[Player]:
-        players = [player for player in self.seating]
+        players = [player for player in self.players]
         self.seating = []
         return players
