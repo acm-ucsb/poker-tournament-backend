@@ -1,94 +1,111 @@
+from __future__ import annotations
+
 import asyncio
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 from fastapi import WebSocketDisconnect
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
+
+from src.core.card import Card
 
 if TYPE_CHECKING:
-    from typing import Any, Literal
     from fastapi import WebSocket
-
-    from src.core.card import Card
-    from src.core.table import TableData, TableUpdateData
+    from src.core.table import TableState
 
 
 class UpdateCode(Enum):
     # Table logic
-    TABLE_CLOSED = 101
+    TABLE_CLOSED = "table_closed"
 
     # Seating logic
-    PLAYER_JOINED = 201
-    PLAYER_LEFT = 202
-    BUTTON_MOVED = 203
+    PLAYER_JOINED = "player-joined"
+    PLAYER_LEFT = "player-left"
+    BUTTON_MOVED = "button-moved"
 
     # Game logic
-    PLAYER_ACTED = 301
-    HAND_DEALT = 301
-    CC_DEALT = 302
-    SHOWDOWN = 303
-    PAYOUT = 304
-    BLIND_AMOUNT_UPDATED = 305
-    PLAYER_ELIMINATED = 306
+    PLAYER_ACTED = "player_acted"
+    HAND_DEALT = "hand-dealt"
+    CC_DEALT = "cc-dealt"
+    SHOWDOWN = "showdown"
+    PAYOUT = "payout"
+    BLIND_AMOUNT_UPDATED = "blind-amount-updated"
+    PLAYER_ELIMINATED = "player-eliminated"
+    NEW_HAND = "new-hand"
 
     # Other logic
-    GAME_MESSAGE = 401
+    GAME_MESSAGE = "game-message"
 
 
 class BasePayload(BaseModel):
-    pass
+    _code: UpdateCode
+
+
+class TableClosedPayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.TABLE_CLOSED)
 
 
 class PlayerJoinedPayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.PLAYER_JOINED)
     player_id: str = Field(serialization_alias="player-id")
     seat: int
 
 
 class PlayerLeftPayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.PLAYER_LEFT)
     player_id: str = Field(serialization_alias="player-id")
 
 
 class ButtonMovedPayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.BUTTON_MOVED)
     button_seat: int = Field(serialization_alias="dealer-seat")
     small_blind_seat: int = Field(serialization_alias="small-blind-seat")
     big_blind_seat: int = Field(serialization_alias="big-blind-seat")
 
 
 class PlayerActedPayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.PLAYER_ACTED)
     player_id: str = Field(serialization_alias="player-id")
     action: Literal["FOLD", "CALL", "CHECK", "RAISE", "ALL-IN"]
     amount: int
 
 
 class HandDealtPayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.HAND_DEALT)
     player_id: str = Field(serialization_alias="player-id")
     cards: list[Card]
 
 
 class CCDealtPayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.CC_DEALT)
     cards: list[Card]
 
 
-class Payout(BaseModel):
-    player_id: str = Field(serialization_alias="player-id")
-    amount: int
+class ShowdownPayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.SHOWDOWN)
 
 
 class PayoutPayload(BasePayload):
-    payouts: list[Payout]
+    _code = PrivateAttr(default=UpdateCode.PAYOUT)
+    payouts: dict[str, int]
+
+
+class BlindAmountUpdatePayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.BLIND_AMOUNT_UPDATED)
 
 
 class PlayerEliminatedPayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.PLAYER_ELIMINATED)
     player_id: str = Field(serialization_alias="player-id")
 
 
+class NewHandPayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.NEW_HAND)
+
+
 class GameMessagePayload(BasePayload):
+    _code = PrivateAttr(default=UpdateCode.GAME_MESSAGE)
     message: str
-
-
-class UpdateData(BaseModel):
-    code: UpdateCode
-    payload: BasePayload
 
 
 class BroadcastChannel:
@@ -96,7 +113,7 @@ class BroadcastChannel:
         self.connections: list[WebSocket] = []
         self.max_connection: int = max_connection
 
-    async def connect(self, websocket: WebSocket, table_state: TableData) -> None:
+    async def connect(self, websocket: WebSocket, table_state: TableState) -> None:
         """
         Raises:
             ConnectionError: if max connection reached
@@ -136,10 +153,10 @@ class BroadcastChannel:
             if connection not in disconnected
         ]
 
-    def update(self, state: TableData, update: TableUpdateData):
+    def update(self, payload: BasePayload):
         msg = {
-            "current-state": state.model_dump(mode="json", by_alias=True),
-            "update-log": update.model_dump(mode="json", by_alias=True),
+            "code": payload._code.value,
+            "info": payload.model_dump(mode="json", by_alias=True),
         }
 
         asyncio.create_task(self._broadcast(msg))
