@@ -1,9 +1,13 @@
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
-from src.core.card import Card, RANK, SUIT
-# from table import Table, TableData
+from src.core.card import RANK, SUIT
+
+if TYPE_CHECKING:
+    from typing import Optional
+    
+    from src.core.card import Card
 
 
 class ActionType(Enum):
