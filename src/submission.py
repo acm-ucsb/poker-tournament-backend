@@ -33,11 +33,11 @@ async def get_submitted_file(user: User = Depends(verify_user)):
 async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
     helpers.check_edit_access()
 
+    team_id = helpers.get_team_id(user)
+
     # decode bytes -> str
     # add .replace("\r\n", "\n") if want to normalize line ending wtvr
-    content_str = (await file.read()).decode("utf-8")
-
-    team_id = helpers.get_team_id(user)
+    content = (await file.read()).decode("utf-8")
 
     async with helpers.file_lock:
         helpers.uploads_dir.mkdir(exist_ok=True)
@@ -56,16 +56,13 @@ async def submit_file(file: UploadFile, user: User = Depends(verify_user)):
 
     team_fname = pathlib.Path(team_id + suffix)
 
-    # joining paths
-    file_path = helpers.uploads_dir / team_fname
-
     # delete all other team files before writing to new file. this is atomic
     await helpers.delete_file_with_stem(team_id)
 
     async with helpers.file_lock:
-        # save the file to uploads directory
-        with file_path.open("w", encoding="utf-8") as f:
-            f.write(content_str)
+        # save the file to uploads directory and wrapped file (wrapped_<team_id>.ext)
+        helpers.save_original_file(helpers.uploads_dir / team_fname, content)
+        helpers.save_insert_into_skeleton(team_id, suffix, content)
 
     # set team.has_submitted_code to true
     db_client.table("teams").update({"has_submitted_code": True}).eq(
@@ -95,42 +92,3 @@ async def delete_file(user: User = Depends(verify_user)):
     ).execute()
 
     return {"file_deleted": team_fname}
-
-    # if file.filename.endswith(".py"):
-    #     process = subprocess.run(
-    #         ["python3", file.filename],
-    #         capture_output=True,
-    #         text=True,
-    #         check=True,  # ensure the command raises exception on failure
-    #         cwd=uploads_dir,  # change directory to uploads
-    #     )
-    #     return {
-    #         "status": "success",
-    #         "stdout": process.stdout,
-    #         "stderr": process.stderr,
-    #         "message": "Python file processed successfully.",
-    #     }
-    # elif file.filename.endswith(".cpp"):
-    #     fname_no_ext = file.filename[:-4]
-    #     exec_cmd = f"{fname_no_ext}.exe" if os.name == "nt" else f"./{fname_no_ext}"
-
-    #     process = subprocess.run(
-    #         f"c++ {file.filename} -o {fname_no_ext} && {exec_cmd}",
-    #         shell=True,  # run the command in the shell, not list of args
-    #         capture_output=True,
-    #         text=True,
-    #         check=True,  # ensure the command raises exception on failure
-    #         cwd=uploads_dir,  # change directory to uploads
-    #     )
-
-    #     return {
-    #         "status": "success",
-    #         "stdout": process.stdout,
-    #         "stderr": process.stderr,
-    #         "message": "C++ file processed successfully.",
-    #     }
-    # else:
-    #     return {
-    #         "status": "error",
-    #         "message": "Unsupported file type. Only .py and .cpp files are allowed.",
-    #     }

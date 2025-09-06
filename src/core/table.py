@@ -90,7 +90,8 @@ class Table:
         """
         n = len(self.seating)
         small_blind = (self.button + 1) % n
-        while self.seating[small_blind] is None:
+        print(self.seating[small_blind])
+        while not self.seating[small_blind]:
             small_blind = (small_blind + 1) % n
 
         big_blind = (small_blind + 1) % n
@@ -435,14 +436,16 @@ class Table:
         Returns:
             A list of all vacant index, sorted by seating value
         """
-        start = self.big_blind
+        # seat right after big blind is given lowest priority
+        size = len(self.seating)
+        start = (self.big_blind + 1)%size if self.current_player else (self.button + 3)%size
         vacant = []
         n = len(self.seating)
         for i in range(start, n + start):
             if self.seating[i % n] is None:
                 vacant.append(i % n)
 
-        return vacant[::-1]
+        return vacant[::-1] # sorted in priority order
 
     # TODO: test
     def add_player(self, player: Player) -> None:
@@ -479,10 +482,13 @@ class Table:
         if self.size == 0:
             raise IndexError("No more player left to remove")
 
-        players = self.players
-        selected = randint(0, len(players))
-        player = players[selected]
-        self.seating[(selected)] = None  # need to change to None, not remove altogether
+        n = len(self.seating)
+        selected = randint(0, n-1)
+        while not self.seating[selected]:
+            selected = randint(0, n-1)
+
+        player = self.seating[selected]
+        self.seating[selected]= None
 
         return player
 
