@@ -6,9 +6,10 @@ from random import randint
 
 from pydantic import BaseModel, Field
 """ UNCOMMENT EVERYTHING TO DO WITH BROADCASTING WHEN NEEDED """
-# from src.core.broadcasting import BroadcastChannel, UpdateData UNCOMMENT LATER
+from src.core.broadcasting import BroadcastChannel, UpdateData
 from src.core.card import Deck, RANK, SUIT
 from src.core.player import ActionType
+from src.util.models import GameState
 
 if TYPE_CHECKING:
     from src.core.broadcasting import BasePayload
@@ -63,9 +64,11 @@ class Table:
         )
         self.current_call: int = 0
 
-         # self.broadcaster = BroadcastChannel() UNCOMMENT LATER
+        self.broadcaster = BroadcastChannel()
 
         self.pot: int = 0
+
+        self.game_state = GameState()
 
     # TODO: refactor to only recompute when seating changes
     @property

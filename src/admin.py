@@ -8,6 +8,7 @@ import src.util.helpers as helpers
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
+# TODO: FIX
 # endpoint for admins to update the game state
 @admin_router.post("/update/", response_model=AdminUpdate)
 def update_game(updates: AdminUpdate):

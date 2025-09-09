@@ -3,6 +3,7 @@ import os
 import subprocess
 import pathlib
 import datetime
+import json
 from fastapi import HTTPException, status
 from src.util.supabase_client import db_client
 from src.util.models import FileRunResult, GameState
@@ -22,17 +23,14 @@ file_lock = asyncio.Lock()
 """
 dict has updated rows for the gamestate for table if
 """
-def update_game_state(table_id: str, updates: dict):
+def update_game_state(table_id: str, new_state: GameState):
     # update the desired states
-    for key, value in updates.items():
-            try:
-                data, count = db_client.table("tables") \
-                    .update({"game_state": {key: value}}) \
-                    .eq("id", table_id) \
-                    .execute()
-                
-            except Exception as e:
-                print("could not update table")
+
+    as_json = json.dumps(new_state)
+    
+    res = db_client.table("tables").update("game_state") \
+        .eq("id", table_id).execute()
+    
 
     
 
