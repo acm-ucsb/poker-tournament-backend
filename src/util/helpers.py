@@ -17,6 +17,25 @@ skeleton_dir = pathlib.Path("skeleton_files").resolve()
 # actually using a mutex, for any fs writes, preventing race conditions
 file_lock = asyncio.Lock()
 
+# function to update gamestate directly in db
+#TODO: Test
+"""
+dict has updated rows for the gamestate for table if
+"""
+def update_game_state(table_id: str, updates: dict):
+    # update the desired states
+    for key, value in updates.items():
+            try:
+                data, count = db_client.table("tables") \
+                    .update({"game_state": {key: value}}) \
+                    .eq("id", table_id) \
+                    .execute()
+                
+            except Exception as e:
+                print("could not update table")
+
+    
+
 
 # raises exception if cannot edit
 def check_edit_access():

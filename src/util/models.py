@@ -46,3 +46,10 @@ class FileRunResult(TypedDict):
     stdout: NotRequired[str]
     stderr: NotRequired[str]
     message: str
+
+
+class AdminUpdate(BaseModel):
+    player_id: str
+    move: str # FOLD, CHECK, CALL, RAISE
+    amount: int | None
+    table_id: str
