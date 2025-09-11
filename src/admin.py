@@ -8,10 +8,9 @@ import src.util.helpers as helpers
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
-# TODO: FIX
 # endpoint for admins to update the game state
 @admin_router.post("/update/", response_model=AdminUpdate)
-def update_game(updates: AdminUpdate):
+async def update_game(updates: AdminUpdate):
     try:
         current, count = db_client.table("tables") \
             .select("game_state") \
@@ -37,7 +36,7 @@ def update_game(updates: AdminUpdate):
         "held_money": state["held_money"]
     }
 
-    helpers.update_game_state(updates.table_id, send_data)
+    helpers.update_game_state(updates.table_id, GameState(**send_data))
 
 
 @admin_router.get("/test/", response_model=str)

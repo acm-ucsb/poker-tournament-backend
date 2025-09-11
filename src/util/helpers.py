@@ -9,6 +9,10 @@ from src.util.supabase_client import db_client
 from src.util.models import FileRunResult, GameState
 from gotrue import User
 
+python_blacklist = ["requests", "urllib", "socket",
+    "os", "subprocess", "multiprocessing", "threading"]
+
+cpp_blacklist = ["os", "subprocess", "multiprocessing", "threading"]
 
 # all files are sitting in the parent dir that the repo is in, <team_id>.<cpp | py>
 uploads_dir = pathlib.Path("..", "poker_tournament_uploads").resolve()
@@ -25,15 +29,11 @@ dict has updated rows for the gamestate for table if
 """
 def update_game_state(table_id: str, new_state: GameState):
     # update the desired states
-
-    as_json = json.dumps(new_state)
+    as_dict = new_state.model_dump()
     
-    res = db_client.table("tables").update("game_state") \
+    res = db_client.table("tables").update({"game_state": as_dict}) \
         .eq("id", table_id).execute()
     
-
-    
-
 
 # raises exception if cannot edit
 def check_edit_access():
@@ -98,6 +98,34 @@ async def delete_file_with_stem(stem: str) -> str | None:
                 if entry.is_file() and entry.stem == stem:
                     entry.unlink()
                     return entry.name
+
+# checks if the submitted file has any illegal imports     
+async def check_imports_in_file(team_id: str) -> bool:
+    res = await get_file_with_stem(team_id) # gets the file
+    if not res:
+        raise ValueError
+    
+    content = res[1].splitlines()
+    fileName = res[0]
+
+    if fileName.endswith(".py"):
+        for line in content:
+            if line.startswith("import") or line.startswith("from"):
+                for black_word in python_blacklist:
+                    if black_word in line:
+                        return False # illegal import
+    elif fileName.endswith(".cpp"):
+        for line in content:
+            if line.startswith("#include"):
+                for black_word in cpp_blacklist:
+                    if black_word in line:
+                        return False # illegal import
+    else:
+        raise ValueError("Unsupported File Type")
+    
+    return True
+        
+
 
 
 def save_original_file(path: pathlib.Path, content: str):
