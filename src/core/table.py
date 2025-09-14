@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from math import floor, ceil
 from random import randint
+from enum import Enum
 
 from pydantic import BaseModel, Field
 
@@ -15,8 +16,16 @@ if TYPE_CHECKING:
     from src.core.player import Player
 
 
+class TableStatus(Enum):
+    not_started = "not_started"
+    active = "active"
+    paused = "paused"
+    inactive = "inactive"
+
+
 class TableState(BaseModel):
     table_id: str = Field(serialization_alias="table-id")
+    status: TableStatus
     players: list[PlayerData]
     seating: list[str | None]
     current_player: str = Field(serialization_alias="current-player")
@@ -39,11 +48,14 @@ class Table:
     def __init__(
         self,
         table_id: str,
+        name: str,
         max_table_size: int = 8,
         min_table_size: int = 5,
         initial_bind_amount: tuple[int, int] = (10, 30),
     ):
         self.id: str = table_id
+        self.name: str = name
+        self.status = TableStatus.not_started
         self.seating: list[Player | None] = [None] * max_table_size
         self.min_table_size = min_table_size
 
@@ -110,6 +122,7 @@ class Table:
     def state(self) -> TableState:
         return TableState(
             table_id=self.id,
+            status=self.status,
             players=[player.data for player in self.players],
             seating=[seat.id if seat else None for seat in self.seating],
             current_player=self.current_player.id
@@ -394,6 +407,8 @@ class Table:
             - if only one active player remains, end the hand
             - need a raise variable to check how much to call
         """
+        self.status = TableStatus.active
+        
         self.start_hand()
 
         # pre-flop
@@ -501,6 +516,8 @@ class Table:
         # close all broadcasting channels and clean up any remaining resources
         self.broadcaster.update(broadcasting.TableClosedPayload())
         self.broadcaster.disconnect_all()
+        
+        self.status = TableStatus.inactive
 
     def get_vacant(self) -> list[int]:
         """Calculate all vacant seating values based on how far they are from being a BB

@@ -1,5 +1,6 @@
 from math import ceil, floor
 from queue import PriorityQueue
+import uuid
 
 from src.core.table import Table
 from src.core.player import Player
@@ -16,9 +17,9 @@ class PrioritizedItem:
     item: Any=field(compare=False)
 
 class Matchmaking:
-    def __init__(self):
+    def __init__(self, players: list[Player] = []):
         self.tables: list[Table] = []
-        self.players: list[Player] = [] # list of all players
+        self.players: list[Player] = players
         self.base_table_size = 6
 
         self.MIN_TABLE_SIZE = 5
@@ -60,6 +61,9 @@ class Matchmaking:
 
         # TODO: Resume game
 
+    def add_players(self, players: list[Player]):
+        self.players.extend(players)
+    
     # Used for testing
     def update_players(self):
         players = []
@@ -164,8 +168,8 @@ class Matchmaking:
         if num_tables == max_tables + 1:
             raise ValueError("Cannot distribute players within table size constraints.")
 
-        self.base_table_size = base_size 
-        self.tables = [Table(table_id=str(i)) for i in range(num_tables)] # initialize tables
+        self.base_table_size = base_size
+        self.tables = [Table(table_id=str(uuid.uuid1()), name=str(i)) for i in range(num_tables)] # initialize tables
 
         # round robin table assignments
         for i, player in enumerate(self.players):

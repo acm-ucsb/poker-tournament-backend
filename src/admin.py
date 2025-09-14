@@ -6,6 +6,8 @@ from src.util.auth import verify_admin_user
 from src.util.supabase_client import db_client
 import src.util.helpers as helpers
 
+from src.core.engine import Engine
+
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
 
@@ -54,3 +56,33 @@ async def run_code_by_team_id(
     team_id: str, state: GameState, _: User = Depends(verify_admin_user)
 ):
     return await helpers.run_file(team_id, state)
+
+
+@admin_router.post("/start", responses=unauth_res)
+async def start_game(_: User = Depends(verify_admin_user)):
+    code = Engine().start()
+    if code == -1:
+        return status.HTTP_400_BAD_REQUEST
+
+    return status.HTTP_200_OK
+
+
+@admin_router.post("/end", responses=unauth_res)
+async def end_game(_: User = Depends(verify_admin_user)):
+    code = Engine().end()
+    if code == -1:
+        return status.HTTP_400_BAD_REQUEST
+
+    return status.HTTP_200_OK
+
+
+@admin_router.post("/resume", responses=unauth_res)
+async def resume_tables(table_ids: list[str], _: User = Depends(verify_admin_user)):
+    Engine().resume_tables(table_ids)
+    return status.HTTP_200_OK
+
+
+@admin_router.post("/pause", responses=unauth_res)
+async def pause_tables(table_ids: list[str]):
+    Engine().pause_tables(table_ids)
+    return status.HTTP_200_OK
