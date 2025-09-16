@@ -29,6 +29,9 @@ class Card(BaseModel):
     rank: int = Field(..., ge=0, le=12)
     suit: int = Field(..., ge=0, le=3)
 
+    def __str__(self) -> str:
+        return f"{RANK[self.rank]}{SUIT[self.suit]}"
+
 
 class Deck:
     def __init__(self):
@@ -43,10 +46,10 @@ class Deck:
 
         card = None
         while card == None or self.used_card[card] == 1:
-            rank = randint(1, 13)
-            suit = randint(1, 4)
-            card = suit * 4 + rank
+            rank = randint(0, 12)
+            suit = randint(0, 3)
+            card = suit * 13 + rank
 
         self.used_card[card] = 1
 
-        return Card(rank=card[0], suit=card[1])
+        return Card(rank=rank, suit=suit)

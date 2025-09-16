@@ -3,11 +3,47 @@ import os
 import subprocess
 import pathlib
 import datetime
+import json
 from fastapi import HTTPException, status
 from src.util.supabase_client import db_client
 from src.util.models import FileRunResult, GameState
 from gotrue import User
 
+python_whitelist = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "scikit-learn",
+    "statsmodels",
+    "keras",
+    "pytorch",
+    "jax",
+    "flax",
+    "xgboost",
+    "lightgbm",
+    "pydantic",
+    "tensorflow"
+]
+
+cpp_whitelist = [
+    # Core Language Support
+    "exception", "initializer_list", "limits", "new", "type_traits",
+    "typeindex", "typeinfo", "utility",
+    # General Utilities
+    "any", "bitset", "charconv", "functional", "optional", "tuple",
+    "variant", "iterator", "algorithm", "numeric",
+    # Containers
+    "array", "deque", "forward_list", "list", "map", "set", "stack",
+    "unordered_map", "unordered_set", "vector",
+    # Math
+    "cmath", "complex", "random", "valarray",
+    # Time
+    "chrono", "ctime",
+    # String
+    "string", "cctype", "cstring", "string_view",
+    # External Library Whitelist
+    "Boost", "Eigen", "libtorch", "Armadillo"
+]
 
 # all files are sitting in the parent dir that the repo is in, <team_id>.<cpp | py>
 uploads_dir = pathlib.Path("..", "poker_tournament_uploads").resolve()
@@ -17,6 +53,18 @@ skeleton_dir = pathlib.Path("skeleton_files").resolve()
 # actually using a mutex, for any fs writes, preventing race conditions
 file_lock = asyncio.Lock()
 
+# function to update gamestate directly in db
+#TODO: Test
+"""
+dict has updated rows for the gamestate for table if
+"""
+def update_game_state(table_id: str, new_state: GameState):
+    # update the desired states
+    as_dict = new_state.model_dump()
+    
+    res = db_client.table("tables").update({"game_state": as_dict}) \
+        .eq("id", table_id).execute()
+    
 
 # raises exception if cannot edit
 def check_edit_access():
@@ -82,6 +130,32 @@ async def delete_file_with_stem(stem: str) -> str | None:
                     entry.unlink()
                     return entry.name
 
+# checks if the submitted file has any illegal imports     
+async def check_imports_in_file(team_id: str, content: list[str]) -> bool:
+    res = await get_file_with_stem(team_id) # gets the file
+    if not res:
+        raise ValueError
+    
+    # content = res[1].splitlines()
+    fileName = res[0] # retrieve file name
+
+    if fileName.endswith(".py"):
+        for line in content:
+            if line.startswith("import") or line.startswith("from"):
+                if not any(word in line for word in python_whitelist):
+                    return False # illegal import
+    elif fileName.endswith(".cpp"):
+        for line in content:
+            if line.startswith("#include"):
+                if not any(word in line for word in cpp_whitelist):
+                    return False # illegal import
+    else:
+        raise ValueError("Unsupported File Type")
+    
+    return True
+        
+
+
 
 def save_original_file(path: pathlib.Path, content: str):
     # save the file to uploads directory
@@ -90,17 +164,26 @@ def save_original_file(path: pathlib.Path, content: str):
 
 
 # copy skeleton_file lines, insert code into correct spot, write lines to team id file
-def save_insert_into_skeleton(team_id: str, suffix: str, content: str):
+async def save_insert_into_skeleton(team_id: str, suffix: str, content: str):
     lines = []
     content_lines = content.splitlines(keepends=True)
     with (skeleton_dir / f"skeleton{suffix}").open("r", encoding="utf-8") as f:
         lines = f.readlines()
+
+    passed = await check_imports_in_file(team_id, content_lines)
+    if not passed:
+        res = db_client.table("teams").update({"submission_passed": False}) \
+        .eq("id", team_id).execute() # flag submission as invalid in db
+        return
 
     for i in range(len(lines)):
         if lines[i].startswith(r"//%insert%//"):  # the special insert string
             lines = lines[:i] + content_lines + lines[i + 1 :]
             break
 
+    res = db_client.table("teams").update({"submission_passed": True}) \
+        .eq("id", team_id).execute() # flag submission as valid in db
+    
     wrap_path = uploads_dir / f"wrapped_{team_id}{suffix}"
     with wrap_path.open("w", encoding="utf-8") as f:
         f.writelines(lines)
