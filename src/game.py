@@ -1,32 +1,30 @@
 import os
-# import asyncio
-
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from src.util import models
-# from src.core.broadcasting import BroadcastChannel
-# from src.core.table import Table
-# from src.core.signaling import EventType
+from src.core.table import Table
+from src.core.tournament import Tournament
 
 game_router = APIRouter(prefix="/game", tags=["game"])
 
 
-@game_router.get("/{game_id}/", response_model=models.GameState)
-def read_gamestate(game_id: int):
-    return models.GameState(
-        index_to_action=0,
-        players=[],
-        players_cards=[],
-        held_money=[],
-        bet_money=[],
-        pots=[],
-        community_cards=[],
-        current_round="preflop",
-        small_blind=5,
-        big_blind=10,
-    )
+@game_router.get("/{table_id}/", response_model=models.GameState)
+def read_gamestate(table_id: str):
+    Table.read_state_from_db(table_id)
 
 
-@game_router.post("/{game_id}/next/", response_model=str)
+@game_router.post("/tables/create/")
+def create_tables():
+    Tournament.insert_tables()
+    return "success"
+
+
+@game_router.delete("/tables/delete/")
+def delete_tables():
+    Tournament.delete_tables()
+    return "success"
+
+
+# @game_router.post("/{game_id}/next/", response_model=str)
 def next_move(game_id: int, moves: int):
     # Define the name of the directory
     directory_name = os.path.join("test_data")
