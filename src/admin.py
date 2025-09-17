@@ -31,12 +31,8 @@ async def update_game(updates: AdminUpdate):
         state["bet_money"][player_index] += updates.amount
         state["held_money"][player_index] -= updates.amount
 
-    send_data = {
-        "bet_money": state["bet_money"],
-        "held_money": state["held_money"]
-    }
 
-    helpers.update_game_state(updates.table_id, GameState(**send_data))
+    helpers.update_game_state(updates.table_id, GameState(**state))
 
 
 @admin_router.get("/test/", response_model=str)
