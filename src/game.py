@@ -1,27 +1,7 @@
 import os
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from src.util import models
-from src.core.table import Table
-from src.core.tournament import Tournament
 
 game_router = APIRouter(prefix="/game", tags=["game"])
-
-
-@game_router.get("/{table_id}/", response_model=models.GameState)
-def read_gamestate(table_id: str):
-    Table.read_state_from_db(table_id)
-
-
-@game_router.post("/tables/create/")
-def create_tables():
-    Tournament.insert_tables()
-    return "success"
-
-
-@game_router.delete("/tables/delete/")
-def delete_tables():
-    Tournament.delete_tables()
-    return "success"
 
 
 # @game_router.post("/{game_id}/next/", response_model=str)

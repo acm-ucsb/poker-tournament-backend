@@ -5,6 +5,8 @@ from src.util.models import unauth_res, SubmittedFile, FileRunResult, GameState
 from src.util.auth import verify_admin_user
 from src.util.supabase_client import db_client
 import src.util.helpers as helpers
+from src.core.table import Table
+from src.core.tournament import Tournament
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -54,3 +56,20 @@ async def run_code_by_team_id(
     team_id: str, state: GameState, _: User = Depends(verify_admin_user)
 ):
     return await helpers.run_file(team_id, state)
+
+
+@admin_router.get("/tables/{table_id}/", response_model=GameState, responses=unauth_res)
+def read_full_gamestate(table_id: str, _: User = Depends(verify_admin_user)):
+    Table.read_state_from_db(table_id)
+
+
+@admin_router.post("/tables/create/", responses=unauth_res)
+def create_tables(_: User = Depends(verify_admin_user)):
+    Tournament.insert_tables()
+    return "success"
+
+
+@admin_router.delete("/tables/delete/", responses=unauth_res)
+def delete_tables(_: User = Depends(verify_admin_user)):
+    Tournament.delete_tables()
+    return "success"
