@@ -3,6 +3,7 @@ import random
 from src.util.models import GameState, Pot
 from src.util.supabase_client import db_client
 from typing import Any
+import copy
 
 DEFUALT_SB = 5.0
 DEFAULT_BB = 10.0
@@ -14,6 +15,7 @@ FULL_DECK = [rank + suit for suit in SUITS for rank in RANKS]
 
 class Table:
     # shuffled, pulled from a GameState, or defualt all possible cards
+    # for drawing random cards.
     @staticmethod
     def available_cards_shuffled(s: GameState | None = None) -> list[str]:
         def shuffle_copy(li: list[Any]):
@@ -38,10 +40,12 @@ class Table:
         s.held_money.append(s.held_money.pop(0))
 
     # in-place to the GameState
-    # bet_size: -1 = fold, 0 check, >0 bet
+    # raise_size: -1 = fold, 0 check, >0 raise their own bet amt
     # TODO: sidepots for all-ins, winner, last one standing
     @staticmethod
-    def apply_bet(s: GameState, bet_size: float, is_blind=False):
+    def apply_bet(s: GameState, raise_size: float, is_blind=False):
+        action_result = f"raised bet by {raise_size}"  # temp result string
+
         def fold():
             s.bet_money[s.index_to_action] = -1
             for p in s.pots:
@@ -56,27 +60,63 @@ class Table:
                 if s.bet_money[s.index_to_action] != -1:
                     break
 
+        # last one standing in entire game!
+        if len(s.players) == 1:
+            action_result = "table won. last one standing."
+            return action_result
+
         max_bet = max(s.bet_money)
+        total_bet = s.bet_money[s.index_to_action] + raise_size
 
         # check for: enough money condition, bet calls max_bet, bet raises with at least min raise (2x)
-        if s.held_money[s.index_to_action] >= bet_size and (
-            bet_size == max_bet or bet_size >= 2 * max_bet
+        if s.held_money[s.index_to_action] >= raise_size and (
+            total_bet == max_bet or total_bet >= 2 * max_bet
         ):
             curr_team = s.players[s.index_to_action]
-            if curr_team in s.pots[0].players:
-                s.pots[0].value += bet_size
+            if curr_team in s.pots[0].players:  # 0-th pot is the main pot
+                s.pots[0].value += raise_size
 
                 # adjust money values, held -> bet
-                s.held_money[s.index_to_action] -= bet_size
-                s.bet_money[s.index_to_action] += bet_size
+                s.held_money[s.index_to_action] -= raise_size
+                s.bet_money[s.index_to_action] += raise_size
             else:
                 # not in main pot for some reason??
                 fold()
+                action_result = "invalid action. autofold."
         else:
             # autofold cuz invalid
             fold()
-        push_index_to_action()
+            action_result = "invalid action. autofold."
 
+        # check if can move onto next betting round (meaning all people called max_bet, folded, or hold no more money)
+        round_over = True
+        for i in range(len(s.players)):
+            if not (
+                s.bet_money[i] == max_bet
+                or s.bet_money[i] == -1
+                or s.held_money[i] == 0
+            ):
+                round_over = False
+        # exception: big blind in preflop can raise/check
+        if round_over:
+            available_cards = Table.available_cards_shuffled(s)
+            # reveal new cards
+            if len(s.community_cards) == 0:
+                s.community_cards += available_cards[:3]
+            elif len(s.community_cards) < 5:
+                s.community_cards += available_cards[:1]
+            else:
+                # TODO: showdown. determine winner. distribute pots.
+                for p in s.pots:
+                    # determine_winner()
+                    pass
+                pass
+        else:
+            push_index_to_action()
+
+        return action_result  # temp for result string
+
+    # CREATES TABLE
     # INSERTS TABLE ENTRY INTO DB, RETURNS TABLE ID
     @staticmethod
     def insert(team_ids: list[str]) -> str:
