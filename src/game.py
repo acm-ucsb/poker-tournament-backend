@@ -1,7 +1,18 @@
 import os
+from fastapi import Depends
+from gotrue import User
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from src.util.models import unauth_res
+from src.util.auth import verify_user
 
 game_router = APIRouter(prefix="/game", tags=["game"])
+
+
+@game_router.post(
+    "/move/", responses=unauth_res, description="for human users to play???"
+)
+def make_move(user: User = Depends(verify_user)):
+    pass
 
 
 # @game_router.post("/{game_id}/next/", response_model=str)
