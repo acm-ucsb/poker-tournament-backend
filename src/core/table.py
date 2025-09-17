@@ -157,3 +157,8 @@ class Table:
 
         # modify self.state based on the action
         Table.write_state_to_db(self.table_id, self.state)
+
+    def get_visible_state(self):
+        visible_state = copy.deepcopy(self.state)
+        visible_state.players_cards.clear()
+        return visible_state
