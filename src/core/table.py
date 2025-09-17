@@ -72,7 +72,6 @@ class Table:
             else:
                 # not in main pot for some reason??
                 fold()
-                push_index_to_action()
         else:
             # autofold cuz invalid
             fold()
