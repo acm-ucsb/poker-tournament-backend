@@ -5,13 +5,13 @@
 
 # class GameState:
 #     index_to_action: int
+#     index_of_small_blind: int
 #     players: list[str]
 #     player_cards: list[str]
 #     held_money: list[float]
 #     bet_money: list[float]
 #     community_cards: list[str]
 #     pots: list[Pot]
-#     current_round: str
 #     small_blind: float
 #     big_blind: float
 
@@ -23,6 +23,7 @@
 
 def set_state_input(state: GameState):
     state.index_to_action = int(input())
+    state.index_of_small_blind = int(input())
     state.players = input().split()
     state.player_cards = input().split()
     state.held_money = list(map(float, input().split()))
@@ -38,7 +39,6 @@ def set_state_input(state: GameState):
         p.players = pot_input_list[1:]
         state.pots.append(p)
 
-    state.current_round = input()
     state.small_blind = float(input())
     state.big_blind = float(input())
 

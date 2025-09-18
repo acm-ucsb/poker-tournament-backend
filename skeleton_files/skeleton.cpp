@@ -14,13 +14,13 @@
 // class GameState {
 // public:
 //   size_t index_to_action;
+//   size_t index_of_small_blind;
 //   vector<string> players;
 //   vector<string> player_cards;
 //   vector<double> held_money;
 //   vector<double> bet_money;
 //   vector<string> community_cards;
 //   vector<Pot> pots;
-//   string current_round;
 //   double small_blind;
 //   double big_blind;
 // };
@@ -59,6 +59,10 @@ void set_state_input(GameState &state) {
   getline(cin, index_to_action_line);
   state.index_to_action = stoull(index_to_action_line);
 
+  string index_of_small_blind_line;
+  getline(cin, index_of_small_blind_line);
+  state.index_of_small_blind = stoull(index_of_small_blind_line);
+
   string players_line;
   getline(cin, players_line);
   state.players = split(players_line);
@@ -96,8 +100,6 @@ void set_state_input(GameState &state) {
     pots.emplace_back(p);
   }
   state.pots = pots;
-
-  getline(cin, state.current_round);
 
   string sb_line;
   getline(cin, sb_line);

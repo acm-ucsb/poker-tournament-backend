@@ -5,13 +5,13 @@ class Pot:
 
 class GameState:
     index_to_action: int
+    index_of_small_blind: int
     players: list[str]
     player_cards: list[str]
     held_money: list[float]
     bet_money: list[float]
     community_cards: list[str]
     pots: list[Pot]
-    current_round: str
     small_blind: float
     big_blind: float
 

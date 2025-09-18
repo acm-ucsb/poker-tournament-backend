@@ -108,6 +108,7 @@ def save_insert_into_skeleton(team_id: str, suffix: str, content: str):
 
 def into_stdin_format(state: GameState) -> str:
     state_str = str(state.index_to_action) + "\n"
+    state_str = str(state.index_of_small_blind) + "\n"
     state_str += " ".join(state.players) + "\n"
     # only list of two cards of the current player can be shown!!! so [index_to_action]
     state_str += " ".join(state.players_cards[state.index_to_action]) + "\n"
@@ -118,7 +119,6 @@ def into_stdin_format(state: GameState) -> str:
     for pot in state.pots:
         state_str += str(pot.value) + " "
         state_str += " ".join(pot.players) + "\n"
-    state_str += state.current_round + "\n"
     state_str += str(state.small_blind) + "\n"
     state_str += str(state.big_blind) + "\n"
 

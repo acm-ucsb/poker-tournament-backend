@@ -7,6 +7,7 @@ import copy
 
 DEFUALT_SB = 5.0
 DEFAULT_BB = 10.0
+DEFUALT_STARTING_STACK = 1000.0
 
 RANKS = ["a", "2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k"]
 SUITS = ["s", "d", "c", "h"]
@@ -135,18 +136,18 @@ class Table:
 
         for _ in team_ids:
             players_cards.append([cards.pop(), cards.pop()])
-            held_money.append(1000)
+            held_money.append(DEFUALT_STARTING_STACK)
             bet_money.append(0)
 
         new_state = GameState(
             index_to_action=0,
+            index_of_small_blind=0,
             players=team_ids,
             players_cards=players_cards,
             held_money=held_money,
             bet_money=bet_money,
             community_cards=[],
             pots=[main_pot],
-            current_round="preflop",
             small_blind=DEFUALT_SB,
             big_blind=DEFAULT_BB,
         )

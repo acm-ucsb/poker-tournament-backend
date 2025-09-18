@@ -30,13 +30,13 @@ class Pot(BaseModel):
 # cards are defined as 1st char: a(2-9)tjqk, 2nd char: sdch
 class GameState(BaseModel):
     index_to_action: int
+    index_of_small_blind: int  # action starts here
     players: list[str]  # team_ids
     players_cards: list[list[str]]  # list of two card strs per team by index
     held_money: list[float]  # money per team by index
     bet_money: list[float]  # per round by index, -1 for fold, 0 for check/hasn't bet
     community_cards: list[str]
     pots: list[Pot]  # list for the case of sidepots
-    current_round: str  # for convenience: preflop, flop, turn, river
     small_blind: float
     big_blind: float
 

@@ -13,13 +13,13 @@ public:
 class GameState {
 public:
   size_t index_to_action;
+  size_t index_of_small_blind;
   vector<string> players;
   vector<string> player_cards;
   vector<double> held_money;
   vector<double> bet_money;
   vector<string> community_cards;
   vector<Pot> pots;
-  string current_round;
   double small_blind;
   double big_blind;
 };
