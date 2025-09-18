@@ -47,6 +47,29 @@ class GameState:
 
 The bot code functions get almost the same schema, EXCEPT `GameState.players_cards` becomes `player_cards` and is just a list of str. In cpp, list becomes vector.
 
+#### Example GameState
+
+```json
+{
+  "index_to_action": 2,
+  "index_of_small_blind": 0,
+  "players": ["team_id0", "team_id1", "team_id2"],
+  "players_cards": [
+    ["as", "ad"],
+    ["th", "3c"],
+    ["2s", "7s"]
+  ],
+  "held_money": [100.0, 200.0, 300.0],
+  "bet_money": [20.0, -1.0, 0.0],
+  "community_cards": ["ac", "2h", "2d"],
+  "pots": [{ "value": 50.0, "players": ["team_id0", "team_id2"] }],
+  "small_blind": 5.0,
+  "big_blind": 10
+}
+```
+
+In this example GameState, this is the betting round after the flop (because 3 cards in community). Index 0 with (Ace of spades, Ace of diamonds) has already bet 20 on this round (this player has a full house with 3 aces and 2 twos). Index 1 has folded with bet_money = -1, and not vying for any pots (not in pots[0].players). Action is on index 2 (2 of spades, 7 of spades) who hasn't bet on this round yet (has "trips"/three of a kind with 3 twos).
+
 ### code execution structure
 
 - NO SAFE GUARDS ON THE CODE!!!
