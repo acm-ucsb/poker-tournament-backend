@@ -60,11 +60,10 @@ The bot code functions get almost the same schema, EXCEPT `GameState.players_car
 
 ### very broad baseline api
 
-- account for host, human and bot (handled by supabase with frontend or smth)
-  - prob should keep track of money for each account
-- games, game state: `wss://<ip>:<port>/` like this for obserbing websocket state. prob just get websockets working and everything
-- host: control games, start/stop, assigning human players
-- human player: send message to websocket with move (only during their turn), can also be used for testing??
+- users: account for admin, human, and bot (handled by supabase with frontend)
+- game: supabase realtime, frontend listens to any changes made by backend on table
+- admin: control games, start/stop, assigning human players
+- human player: send request to server with their raise_amt
 - submission: file uploads into template
 
 ### additional api stuff
@@ -73,7 +72,7 @@ The bot code functions get almost the same schema, EXCEPT `GameState.players_car
 
 schemas will be figured out as it goes
 
-## general notes
+## old general notes
 
 - fastapi + supervisor/systemd + nginx
   - nginx for https/certs, load balancing(?), caching(?), ssl/tls(?), security(?), rate limiting(?)
@@ -94,7 +93,7 @@ schemas will be figured out as it goes
 - host to control what players go to what game, tournament manager
 - websockets: live updated game state for each game being played in the tournament
 
-## finished tasks (old stuff)
+### finished tasks (old stuff)
 
 - fastapi setup
 - google cloud compute hooked up to static ext ip (35.212.235.70) with a production server than can run on port 8000
@@ -106,7 +105,7 @@ schemas will be figured out as it goes
   - py, c++ code can be run, return stdout
   - python can access the stdout as a `str` after process finishes
 
-## other ideas
+### other ideas
 
 - webhook from github that calls a post request to refresh server with new stuff
   - `subprocess.run("cd /path/to/your/app && git pull origin main && systemctl restart your-service")` on /restart route or smth
