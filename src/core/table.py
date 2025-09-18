@@ -35,18 +35,30 @@ class Table:
         return shuffle_copy(diff)
 
     @staticmethod
-    def rotate_positions(s: GameState):
-        # technically deque is more efficient... but it don't matter
-        s.players.append(s.players.pop(0))
-        s.held_money.append(s.held_money.pop(0))
+    def rotate_blinds(s: GameState):
+        s.index_of_small_blind = (s.index_of_small_blind + 1) % len(s.players)
+
+    # blind spots need sufficient money for blind values. main pot must exist.
+    @staticmethod
+    def apply_blinds(s: GameState):
+        index_bb = (s.index_of_small_blind + 1) % len(s.players)
+        index_utg = (s.index_of_small_blind + 2) % len(s.players)
+
+        s.held_money[s.index_of_small_blind] -= s.small_blind
+        s.bet_money[s.index_of_small_blind] += s.small_blind
+
+        s.held_money[index_bb] -= s.big_blind
+        s.bet_money[index_bb] += s.big_blind
+
+        s.pots[0].value += s.small_blind + s.big_blind
+
+        s.index_to_action = index_utg
 
     # in-place to the GameState
     # raise_size: -1 = fold, 0 check, >0 raise their own bet amt
-    # TODO: sidepots for all-ins, winner, last one standing
+    # TODO: sidepots for all-ins, winner, removing player who has no money left
     @staticmethod
-    def apply_bet(s: GameState, raise_size: float, is_blind=False):
-        action_result = f"raised bet by {raise_size}"  # temp result string
-
+    def apply_bet(s: GameState, raise_size: float):
         def fold():
             s.bet_money[s.index_to_action] = -1
             for p in s.pots:
@@ -60,6 +72,38 @@ class Table:
                 s.index_to_action %= len(s.players)
                 if s.bet_money[s.index_to_action] != -1:
                     break
+
+        def new_hands():
+            # TODO: removing players that have no more money. less than big blind for now.
+            # popping in reverse so in-place removal has no issues
+            for i in range(len(s.players) - 1, -1, -1):
+                if s.held_money[i] < s.big_blind:
+                    s.players.pop(i)
+                    s.players_cards.pop(i)
+                    s.held_money.pop(i)
+                    s.bet_money.pop(i)
+
+            for i in range(len(s.bet_money)):
+                s.bet_money[i] = 0
+
+            # deal new cards to players
+            deck = Table.available_cards_shuffled()
+            s.players_cards.clear()
+            for i in range(len(s.players_cards)):
+                s.players_cards[i] = [deck.pop(), deck.pop()]
+
+            s.community_cards.clear()
+            s.pots = [Pot(value=0, players=s.players)]
+
+            # blinds
+            Table.rotate_blinds(s)
+            Table.apply_blinds(s)
+
+        # ===================================== #
+        # END OF HELPER FUNCTIONS FOR APPLY_BET #
+        # ===================================== #
+
+        action_result = f"raised bet by {raise_size}"  # temp result string
 
         # last one standing in entire game!
         if len(s.players) == 1:
@@ -89,6 +133,24 @@ class Table:
             fold()
             action_result = "invalid action. autofold."
 
+        # WIN lOGIC POINT: ONLY ONE LEFT VYING FOR POT
+        # check if only one player vying for pot and distribute. sidepots might still need to determine winners.
+        no_pots_left = True
+        for pot in s.pots:
+            if len(pot.players) == 1 and pot.value > 0:
+                # player wins pot
+                pot_winning_player = pot.players[0]
+                winning_index = s.players.index(pot_winning_player)
+                s.held_money[winning_index] += pot.value
+                pot.value = 0
+            else:
+                no_pots_left = False
+        if no_pots_left:
+            # start new hand of poker
+            new_hands()
+            action_result = "only one player left. new hands"
+            return action_result
+
         # check if can move onto next betting round (meaning all people called max_bet, folded, or hold no more money)
         round_over = True
         for i in range(len(s.players)):
@@ -98,20 +160,27 @@ class Table:
                 or s.held_money[i] == 0
             ):
                 round_over = False
-        # exception: big blind in preflop can raise/check
+
+        # TODO: exception: big blind in preflop can raise/check
         if round_over:
-            available_cards = Table.available_cards_shuffled(s)
+            # resetting bet_money to 0, except for folded players
+            for i in range(len(s.bet_money)):
+                if s.bet_money[i] != -1:
+                    s.bet_money[i] = 0
+
             # reveal new cards
+            available_cards = Table.available_cards_shuffled(s)
             if len(s.community_cards) == 0:
                 s.community_cards += available_cards[:3]
             elif len(s.community_cards) < 5:
                 s.community_cards += available_cards[:1]
             else:
-                # TODO: showdown. determine winner. distribute pots.
-                for p in s.pots:
+                # WIN LOGIC POINT: SHOWDOWN
+                for pot in s.pots:
+                    # TODO: showdown. determine winner by comparing hands. distribute pots.
                     # determine_winner()
-                    pass
-                pass
+                    new_hands()
+                action_result = "best hand at showdown wins. new hands"
         else:
             push_index_to_action()
 
@@ -152,8 +221,7 @@ class Table:
             big_blind=DEFAULT_BB,
         )
 
-        Table.apply_bet(new_state, new_state.small_blind)
-        Table.apply_bet(new_state, new_state.big_blind)
+        Table.apply_blinds(new_state)
 
         # write new entry into tables db
         row_entry_json = {"status": "active", "game_state": new_state.model_dump_json()}
@@ -190,11 +258,10 @@ class Table:
         self.small_blind = 5
         self.big_blind = 10
 
-    def make_move(self):  # TODO
+    def make_move(self, raise_size=0.0):  # TODO
         # stuff here, human or bot move
         # blinding, uh other stuff too i forgor
-        action = 0
-        Table.apply_bet(self.state, action)
+        Table.apply_bet(self.state, raise_size)
 
         # modify self.state based on the action
         Table.write_state_to_db(self.table_id, self.state)
