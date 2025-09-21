@@ -161,8 +161,17 @@ class Table:
             ):
                 round_over = False
 
-        # TODO: exception: big blind in preflop can raise/check
-        if round_over:
+        # exception: big blind in preflop can raise/check (round not over)
+        index_bb = (s.index_of_small_blind + 1) % len(s.players)
+        next_to_action = (s.index_to_action + 1) % len(s.players)
+        # big blind is next to action && in the preflop && bet amt equals game bb amt
+        big_blind_can_check = (
+            next_to_action == index_bb
+            and len(s.community_cards) == 0
+            and s.bet_money[index_bb] == s.big_blind
+        )
+
+        if not big_blind_can_check and round_over:
             # resetting bet_money to 0, except for folded players
             for i in range(len(s.bet_money)):
                 if s.bet_money[i] != -1:
