@@ -1,6 +1,7 @@
 import json
 import random
 from src.util.models import GameState, Pot
+import src.util.helpers as helpers
 from src.util.supabase_client import db_client
 from typing import Any
 import copy
@@ -66,13 +67,12 @@ class Table:
 
         def push_index_to_action():
             while True:
-                s.index_to_action += 1
-                s.index_to_action %= len(s.players)
+                s.index_to_action = (s.index_to_action + 1) % len(s.players)
                 if s.bet_money[s.index_to_action] != -1:
                     break
 
         def new_hands():
-            # TODO: removing players that have no more money. less than big blind for now.
+            # TODO fix: removing players that have no more money. less than big blind for now.
             # popping in reverse so in-place removal has no issues
             for i in range(len(s.players) - 1, -1, -1):
                 if s.held_money[i] < s.big_blind:
@@ -286,10 +286,20 @@ class Table:
         self.table_id: str = table_id
         self.state: GameState = Table.read_state_from_db(table_id)
 
-    def make_move(self, raise_size=0.0):  # TODO
-        # stuff here, human or bot move
-        # blinding, uh other stuff too i forgor
-        Table.apply_bet(self.state, raise_size)
+    async def make_move(self, raise_size: float | None = None):
+        # human or bot move, default None for bot, float for human input
+
+        if raise_size is not None:
+            Table.apply_bet(self.state, raise_size)
+        else:
+            try:
+                res = await helpers.run_file(
+                    self.state.players[self.state.index_to_action], self.state
+                )
+                bot_raise = float(res["stdout"])
+                Table.apply_bet(self.state, bot_raise)
+            except Exception as e:
+                print("bot run failed", e)
 
         # modify self.state based on the action
         Table.write_state_to_db(self.table_id, self.state)
