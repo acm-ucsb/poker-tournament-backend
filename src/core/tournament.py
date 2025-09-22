@@ -8,6 +8,24 @@ DEFAULT_TOURNAMENT_ID = "f6fd507b-42fb-4fba-a0d3-e9ded05aeca5"
 
 
 class Tournament:
+    @staticmethod
+    def exists_tournament(id: str = DEFAULT_TOURNAMENT_ID) -> bool:
+        try:
+            db_client.table("tournaments").select("id").eq("id", id).execute()
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def insert_tournament(id: str = DEFAULT_TOURNAMENT_ID):
+        db_client.table("tournaments").insert(
+            {
+                "id": id,
+                "name": "New Tournament",
+                "status": "not_started",
+            }
+        ).execute()
+
     # INSERTS ALL POSSIBLE TABLES INTO DB, ASSIGNS TABLES TO DEFAULT TOURNAMENT
     @staticmethod
     def insert_tables():
@@ -44,7 +62,7 @@ class Tournament:
     # DELETES ALL TABLES, AND TABLES COL IN TOURNAMENT
     @staticmethod
     def delete_tables():
-        # delete all entries in tables
+        # delete all entries in tables (realistically tables wont have this id)
         db_client.table("tables").delete().neq(
             "id", "00000000-0000-0000-0000-000000000000"
         ).execute()
@@ -57,7 +75,7 @@ class Tournament:
     def __init__(self, tournament_id: str = DEFAULT_TOURNAMENT_ID):
         status_res = (
             db_client.table("tournaments")
-            .select("status", "table")
+            .select("status", "tables")
             .eq("id", tournament_id)
             .single()
             .execute()
@@ -66,7 +84,33 @@ class Tournament:
         self.tournament_id: str = tournament_id
         self.status: str = status_res.data["status"]
 
-        table_ids: list[str] = status_res.data["tables"]
+        table_ids: list[str] = status_res.data["tables"] or []
         table_objs = list(map(lambda t: Table(t), table_ids))
 
         self.tables = dict(zip(table_ids, table_objs))
+
+    async def make_moves(
+        self, table_ids: list[str] | None = None, moves: list[float] | None = None, /
+    ):
+        # table_ids to specify which tables to make moves on, default None for make_move on all
+        # moves is for human moves so must be same len as table_ids, default None for no human moves
+        result_strs = []
+
+        if table_ids is not None and moves is not None:
+            for id, move in zip(table_ids, moves):
+                result_strs.append(await self.tables[id].make_move(move))
+        elif table_ids is not None:
+            for id in table_ids:
+                result_strs.append(await self.tables[id].make_move())
+        else:
+            for table in self.tables.values():
+                result_strs.append(await table.make_move())
+
+        return result_strs
+
+
+# main instance!!!
+tournament = None
+if not Tournament.exists_tournament():
+    Tournament.insert_tournament()
+tournament = Tournament()

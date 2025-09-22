@@ -47,6 +47,9 @@ class Card:
 
         return char1 + char2
 
+    def __hash__(self):
+        return hash(str(self))
+
 
 # ordering by best hands!
 @total_ordering
@@ -149,7 +152,7 @@ class Hand:
 
         for i, card in enumerate(unique_cards):
             # ace exception
-            if card.rank == 5 and unique_cards[0] == 14:
+            if card.rank == 5 and unique_cards[0].rank == 14:
                 if are_consecutive_cards(unique_cards, i, 4):
                     return unique_cards[0:1] + unique_cards[i : i + 4]
 

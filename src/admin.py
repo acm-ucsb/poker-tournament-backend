@@ -6,7 +6,7 @@ from src.util.auth import verify_admin_user
 from src.util.supabase_client import db_client
 import src.util.helpers as helpers
 from src.core.table import Table
-from src.core.tournament import Tournament
+from src.core.tournament import Tournament, tournament
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -60,7 +60,7 @@ async def run_code_by_team_id(
 
 @admin_router.get("/tables/{table_id}/", response_model=GameState, responses=unauth_res)
 def read_full_gamestate(table_id: str, _: User = Depends(verify_admin_user)):
-    Table.read_state_from_db(table_id)
+    return Table.read_state_from_db(table_id)
 
 
 @admin_router.post("/tables/create/", responses=unauth_res)
@@ -73,3 +73,27 @@ def create_tables(_: User = Depends(verify_admin_user)):
 def delete_tables(_: User = Depends(verify_admin_user)):
     Tournament.delete_tables()
     return "success"
+
+
+@admin_router.post(
+    "/tables/move/",
+    response_model=list[str],
+    responses=unauth_res,
+    description="table_ids for specifying which tables to make one move on with bots (default all).",
+)
+async def make_move_on_tables(
+    table_ids: list[str] | None = None, _: User = Depends(verify_admin_user)
+):
+    return await tournament.make_moves(table_ids)
+
+
+@admin_router.post(
+    "/tables/{table_id}/move/",
+    response_model=list[str],
+    responses=unauth_res,
+    description="for human input",
+)
+async def make_move_on_table(
+    table_id: str, raise_size: float, _: User = Depends(verify_admin_user)
+):
+    return await tournament.make_moves([table_id], [raise_size])

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Any, TypedDict
+from typing import Any, TypedDict, NotRequired
 from fastapi import status
 
 
@@ -43,6 +43,6 @@ class GameState(BaseModel):
 
 class FileRunResult(TypedDict):
     status: str
-    stdout: str
-    stderr: str
+    stdout: NotRequired[str]
+    stderr: NotRequired[str]
     message: str

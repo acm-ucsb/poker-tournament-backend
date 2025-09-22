@@ -66,10 +66,14 @@ class Table:
                     p.players.remove(player)
 
         def push_index_to_action():
-            while True:
+            s.index_to_action = (s.index_to_action + 1) % len(s.players)
+            while s.bet_money[s.index_to_action] == -1:
                 s.index_to_action = (s.index_to_action + 1) % len(s.players)
-                if s.bet_money[s.index_to_action] != -1:
-                    break
+
+        def new_round_set_index_to_action():
+            s.index_to_action = s.index_of_small_blind
+            while s.bet_money[s.index_to_action] == -1:
+                s.index_to_action = (s.index_to_action + 1) % len(s.players)
 
         def new_hands():
             # TODO fix: removing players that have no more money. less than big blind for now.
@@ -87,8 +91,8 @@ class Table:
             # deal new cards to players
             deck = Table.available_cards_shuffled()
             s.players_cards.clear()
-            for i in range(len(s.players_cards)):
-                s.players_cards[i] = [deck.pop(), deck.pop()]
+            for i in range(len(s.players)):
+                s.players_cards.append([deck.pop(), deck.pop()])
 
             s.community_cards.clear()
             s.pots = [Pot(value=0, players=s.players)]
@@ -158,6 +162,22 @@ class Table:
                 or s.held_money[i] == 0
             ):
                 round_over = False
+                break
+
+        # check for checking through from sb to action
+        index_btn = (s.index_of_small_blind + len(s.players) - 1) % len(s.players)
+
+        # all only checking or folds would end at button
+        if s.index_to_action != index_btn:
+            all_checks_or_folds = True
+            for bet in s.bet_money:
+                if not (bet == 0 or bet == -1):
+                    # someone bet, not checked through
+                    all_checks_or_folds = False
+                    break
+            # betting round is not over! all checks/folds
+            if all_checks_or_folds:
+                round_over = False
 
         # exception: big blind in preflop can raise/check (round not over)
         index_bb = (s.index_of_small_blind + 1) % len(s.players)
@@ -179,8 +199,10 @@ class Table:
             available_cards = Table.available_cards_shuffled(s)
             if len(s.community_cards) == 0:
                 s.community_cards += available_cards[:3]
+                new_round_set_index_to_action()
             elif len(s.community_cards) < 5:
                 s.community_cards += available_cards[:1]
+                new_round_set_index_to_action()
             else:
                 # WIN LOGIC POINT: SHOWDOWN
                 for pot in s.pots:
@@ -199,7 +221,7 @@ class Table:
 
                     winners = [hand_index_tuples[0]]
                     for i, hand in enumerate(hand_index_tuples[1:]):
-                        if winners[0][0] == hand:
+                        if winners[0][0] == hand[0]:
                             winners.append(hand_index_tuples[i])
                         else:
                             # early break because all hands that aren't equal will be less. cuz sorted
@@ -279,7 +301,7 @@ class Table:
 
     @staticmethod
     def write_state_to_db(table_id: str, state: GameState):
-        update_json = {"game_state": state}
+        update_json = {"game_state": state.model_dump_json()}
         db_client.table("tables").update(update_json).eq("id", table_id).execute()
 
     def __init__(self, table_id: str):
@@ -289,20 +311,26 @@ class Table:
     async def make_move(self, raise_size: float | None = None):
         # human or bot move, default None for bot, float for human input
 
+        result_str = ""
+
         if raise_size is not None:
-            Table.apply_bet(self.state, raise_size)
+            # human move
+            result_str = Table.apply_bet(self.state, raise_size)
         else:
-            try:
-                res = await helpers.run_file(
-                    self.state.players[self.state.index_to_action], self.state
-                )
-                bot_raise = float(res["stdout"])
-                Table.apply_bet(self.state, bot_raise)
-            except Exception as e:
-                print("bot run failed", e)
+            # bot move
+            res = await helpers.run_file(
+                self.state.players[self.state.index_to_action], self.state
+            )
+            bot_raise_str = res.get("stdout")
+            if bot_raise_str is not None:
+                result_str = Table.apply_bet(self.state, float(bot_raise_str))
+            else:
+                raise ValueError("stdout not produced by bot")
 
         # modify self.state based on the action
         Table.write_state_to_db(self.table_id, self.state)
+
+        return result_str
 
     def get_visible_state(self):
         visible_state = copy.deepcopy(self.state)
