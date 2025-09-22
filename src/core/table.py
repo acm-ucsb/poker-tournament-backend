@@ -5,7 +5,7 @@ from src.util.supabase_client import db_client
 from typing import Any
 import copy
 
-from src.core.hand import FULL_DECK
+from src.core.hand import FULL_DECK, Hand
 
 DEFAULT_SB = 5.0
 DEFAULT_BB = 10.0
@@ -54,7 +54,7 @@ class Table:
 
     # in-place to the GameState
     # raise_size: -1 = fold, 0 check, >0 raise their own bet amt
-    # TODO: sidepots for all-ins, winner, removing player who has no money left
+    # TODO: removing player who has no money left, last_change
     @staticmethod
     def apply_bet(s: GameState, raise_size: float):
         def fold():
@@ -184,9 +184,32 @@ class Table:
             else:
                 # WIN LOGIC POINT: SHOWDOWN
                 for pot in s.pots:
-                    # TODO: showdown. determine winner by comparing hands. distribute pots.
-                    # determine_winner()
-                    new_hands()
+                    # showdown. determine winner by comparing hands. distribute pots.
+                    pot_player_indexes = list(map(s.players.index, pot.players))
+                    pot_player_hands: list[Hand] = []
+                    for i in pot_player_indexes:
+                        pot_player_hands.append(
+                            Hand(s.community_cards + s.players_cards[i])
+                        )
+
+                    # tracks index of hand for players list
+                    hand_index_tuples = list(zip(pot_player_hands, pot_player_indexes))
+                    # sorts only by the hands desc (greatest first), not by the index
+                    hand_index_tuples.sort(key=lambda x: x[0], reverse=True)
+
+                    winners = [hand_index_tuples[0]]
+                    for i, hand in enumerate(hand_index_tuples[1:]):
+                        if winners[0][0] == hand:
+                            winners.append(hand_index_tuples[i])
+                        else:
+                            # early break because all hands that aren't equal will be less. cuz sorted
+                            break
+
+                    money_for_each = pot.value / len(winners)
+                    for winner in winners:
+                        s.held_money[winner[1]] += money_for_each
+
+                new_hands()
                 action_result = "best hand at showdown wins. new hands."
         else:
             push_index_to_action()
@@ -262,8 +285,6 @@ class Table:
     def __init__(self, table_id: str):
         self.table_id: str = table_id
         self.state: GameState = Table.read_state_from_db(table_id)
-        self.small_blind = DEFAULT_SB
-        self.big_blind = DEFAULT_BB
 
     def make_move(self, raise_size=0.0):  # TODO
         # stuff here, human or bot move

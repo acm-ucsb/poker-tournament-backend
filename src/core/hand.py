@@ -19,6 +19,7 @@ HAND_TYPES = {
 }
 
 
+# class used within Hand only!
 # ordering by ranks (eq not by suit, only rank)!
 @total_ordering
 class Card:
@@ -93,7 +94,6 @@ class Hand:
 
         return final_hand
 
-    # best possible full house
     @staticmethod
     def full_house(cards: list[Card], rank_occurences: list[int]):
         trips = Hand.all_n_of_a_kind(3, cards, rank_occurences)
@@ -254,7 +254,7 @@ class Hand:
 
         return final_hand
 
-    # cards must be >= 5. will create best hand.
+    # cards must be >= 5. will determine best hand.
     def __init__(self, card_strs: list[str]):
         # Card list with HIGHER RANK cards first!!!
         cards = sorted(list(map(Card, card_strs)), reverse=True)
