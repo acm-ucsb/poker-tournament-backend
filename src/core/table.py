@@ -5,17 +5,15 @@ from src.util.supabase_client import db_client
 from typing import Any
 import copy
 
-DEFUALT_SB = 5.0
-DEFAULT_BB = 10.0
-DEFUALT_STARTING_STACK = 1000.0
+from src.core.hand import FULL_DECK
 
-RANKS = ["a", "2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k"]
-SUITS = ["s", "d", "c", "h"]
-FULL_DECK = [rank + suit for suit in SUITS for rank in RANKS]
+DEFAULT_SB = 5.0
+DEFAULT_BB = 10.0
+DEFAULT_STARTING_STACK = 1000.0
 
 
 class Table:
-    # shuffled, pulled from a GameState, or defualt all possible cards
+    # shuffled, pulled from a GameState, or default all possible cards
     # for drawing random cards.
     @staticmethod
     def available_cards_shuffled(s: GameState | None = None) -> list[str]:
@@ -103,7 +101,7 @@ class Table:
         # END OF HELPER FUNCTIONS FOR APPLY_BET #
         # ===================================== #
 
-        action_result = f"raised bet by {raise_size}"  # temp result string
+        action_result = f"raised bet by {raise_size}."  # temp result string
 
         # last one standing in entire game!
         if len(s.players) == 1:
@@ -148,7 +146,7 @@ class Table:
         if no_pots_left:
             # start new hand of poker
             new_hands()
-            action_result = "only one player left. new hands"
+            action_result = "only one player left. new hands."
             return action_result
 
         # check if can move onto next betting round (meaning all people called max_bet, folded, or hold no more money)
@@ -189,7 +187,7 @@ class Table:
                     # TODO: showdown. determine winner by comparing hands. distribute pots.
                     # determine_winner()
                     new_hands()
-                action_result = "best hand at showdown wins. new hands"
+                action_result = "best hand at showdown wins. new hands."
         else:
             push_index_to_action()
 
@@ -214,7 +212,7 @@ class Table:
 
         for _ in team_ids:
             players_cards.append([cards.pop(), cards.pop()])
-            held_money.append(DEFUALT_STARTING_STACK)
+            held_money.append(DEFAULT_STARTING_STACK)
             bet_money.append(0)
 
         new_state = GameState(
@@ -226,7 +224,7 @@ class Table:
             bet_money=bet_money,
             community_cards=[],
             pots=[main_pot],
-            small_blind=DEFUALT_SB,
+            small_blind=DEFAULT_SB,
             big_blind=DEFAULT_BB,
         )
 
@@ -264,8 +262,8 @@ class Table:
     def __init__(self, table_id: str):
         self.table_id: str = table_id
         self.state: GameState = Table.read_state_from_db(table_id)
-        self.small_blind = 5
-        self.big_blind = 10
+        self.small_blind = DEFAULT_SB
+        self.big_blind = DEFAULT_BB
 
     def make_move(self, raise_size=0.0):  # TODO
         # stuff here, human or bot move
