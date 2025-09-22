@@ -7,15 +7,15 @@ SUITS = ["s", "d", "c", "h"]
 FULL_DECK = [rank + suit for suit in SUITS for rank in RANKS]
 
 HAND_TYPES = {
-    "straight flush": 8,
-    "four of a kind": 7,
-    "full house": 6,
+    "straight_flush": 8,
+    "four_of_a_kind": 7,
+    "full_house": 6,
     "flush": 5,
     "straight": 4,
-    "three of a kind": 3,
-    "two pair": 2,
+    "three_of_a_kind": 3,
+    "two_pair": 2,
     "pair": 1,
-    "high card": 0,
+    "high_card": 0,
 }
 
 
@@ -31,14 +31,14 @@ class Card:
         self.suit: int = SUITS.index(card_str[1])
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, Card):
-            return self.rank == other.rank
-        raise self.comparison_err
+        if not isinstance(other, Card):
+            raise self.comparison_err
+        return self.rank == other.rank
 
     def __gt__(self, other: object) -> bool:
-        if isinstance(other, Card):
-            return self.rank > other.rank
-        raise self.comparison_err
+        if not isinstance(other, Card):
+            raise self.comparison_err
+        return self.rank > other.rank
 
     def __str__(self) -> str:
         char1 = "a" if self.rank == 14 else RANKS[self.rank - 1]
@@ -50,7 +50,10 @@ class Card:
 # ordering by best hands!
 @total_ordering
 class Hand:
+    comparison_err = TypeError("Hand can only be compared with other Hand instances.")
+
     # generating all pairs, all triples, all quads
+    # rank occurences detailed in __init__
     @staticmethod
     def all_n_of_a_kind(n: int, cards: list[Card], rank_occurences: list[int]):
         pairs_trips_quads: list[list[Card]] = []
@@ -62,6 +65,17 @@ class Hand:
                     list(filter(lambda card: card.rank == rank, cards))
                 )
         return pairs_trips_quads
+
+    # =============================================================== #
+    # THE FOLLOWING FUNCTIONS GENERATE CARDS FOR SPECIFIED HAND TYPES #
+    # --------------------------------------------------------------- #
+    # - will generate a list of best 5 cards for the hand             #
+    # - cards: must be in sorted desc order (greatest first Ace -> 2) #
+    # - return -> more important hand deciding cards first, kickers   #
+    #   - eg: full_house -> [*(3 of a kind), *(pair)]                 #
+    #   - eg: pair -> [*(pair), kicker1, kicker2, kicker3]            #
+    # - returns None if not possible                                  #
+    # =============================================================== #
 
     @staticmethod
     def four_of_a_kind(cards: list[Card], rank_occurences: list[int]):
@@ -90,7 +104,6 @@ class Hand:
             return None
         return trips[0] + pairs[0]
 
-    # finds cards in the flush (given sorted in descending rank order).
     # <10 cards, several flushes can exist otherwise.
     @staticmethod
     def flush(cards: list[Card], only_five_greatest=True):
@@ -114,7 +127,6 @@ class Hand:
                 hand_cards.append(card)
         return hand_cards
 
-    # finds greatest 5 cards in the straight (given sorted in descending rank order).
     @staticmethod
     def straight(cards: list[Card]):
         def are_consecutive_cards(li: list[Card], start: int, span: int) -> bool:
@@ -257,17 +269,75 @@ class Hand:
             rank_occurences[card.rank] += 1
 
         straight_flush = Hand.straight(all_flush) if all_flush is not None else None
+        if straight_flush is not None:
+            self.cards = straight_flush
+            self.type = "straight flush"
+            return
+
         four_of_a_kind = Hand.four_of_a_kind(cards, rank_occurences)
+        if four_of_a_kind is not None:
+            self.cards = four_of_a_kind
+            self.type = "four of a kind"
+            return
+
         full_house = Hand.full_house(cards, rank_occurences)
+        if full_house is not None:
+            self.cards = full_house
+            self.type = "full_house"
+            return
+
         flush = all_flush[:5] if all_flush is not None else None
+        if flush is not None:
+            self.cards = flush
+            self.type = "flush"
+            return
+
         straight = Hand.straight(cards)
+        if straight is not None:
+            self.cards = straight
+            self.type = "straight"
+            return
+
         three_of_a_kind = Hand.three_of_a_kind(cards, rank_occurences)
+        if three_of_a_kind is not None:
+            self.cards = three_of_a_kind
+            self.type = "three_of_a_kind"
+            return
+
         two_pair = Hand.two_pair(cards, rank_occurences)
+        if two_pair is not None:
+            self.cards = two_pair
+            self.type = "two_pair"
+            return
+
         pair = Hand.pair(cards, rank_occurences)
+        if pair is not None:
+            self.cards = pair
+            self.type = "pair"
+            return
+
         high_card = cards[:5]
+        self.cards = high_card
+        self.type = "high_card"
 
     def __eq__(self, other: object) -> bool:
-        pass
+        if not isinstance(other, Hand):
+            raise self.comparison_err
+
+        return self.cards == other.cards
 
     def __gt__(self, other: object) -> bool:
-        pass
+        if not isinstance(other, Hand):
+            raise self.comparison_err
+
+        # True if type is greater
+        if HAND_TYPES[self.type] > HAND_TYPES[other.type]:
+            return True
+
+        # lexicographical comparison!!!
+        # works because most important cards (higher rank) will be order in the right way
+        # suit will not affect, Card __eq__ is only based on rank
+        if HAND_TYPES[self.type] == HAND_TYPES[other.type]:
+            return self.cards > other.cards
+
+        return False
