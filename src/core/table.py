@@ -55,7 +55,7 @@ class Table:
 
     # in-place to the GameState
     # raise_size: -1 = fold, 0 check, >0 raise their own bet amt
-    # TODO: removing player who has no money left, last_change
+    # TODO: last_change
     @staticmethod
     def apply_bet(s: GameState, raise_size: float):
         def fold():
@@ -82,10 +82,10 @@ class Table:
                 s.index_to_action = (s.index_to_action + 1) % len(s.players)
 
         def new_hands():
-            # TODO fix: removing players that have no more money. less than big blind for now.
+            # removing players that have no more money.
             # popping in reverse so in-place removal has no issues
             for i in range(len(s.players) - 1, -1, -1):
-                if s.held_money[i] < s.big_blind:
+                if s.held_money[i] == 0:
                     s.players.pop(i)
                     s.players_cards.pop(i)
                     s.held_money.pop(i)
@@ -197,9 +197,9 @@ class Table:
         )
 
         if not big_blind_can_check and round_over:
-            # ===================== #
-            # start create sidepots #
-            # ===================== #
+            # =================== #
+            # start sidepot logic #
+            # =================== #
 
             bet_size_indexes_dict: dict[float, list[int]] = {}
             for i, bet in enumerate(s.bet_money):
@@ -238,9 +238,9 @@ class Table:
                         new_pot.players.remove(s.players[poorer_player_index])
                     s.pots.insert(0, new_pot)
 
-            # ===================== #
-            # end sidepots creating #
-            # ===================== #
+            # ================= #
+            # end sidepot logic #
+            # ================= #
 
             # resetting bet_money to 0, except for folded players
             for i in range(len(s.bet_money)):
