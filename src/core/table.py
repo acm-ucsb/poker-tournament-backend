@@ -377,7 +377,7 @@ class Table:
             if bot_raise_str is not None:
                 result_str = Table.apply_bet(self.state, float(bot_raise_str))
             else:
-                raise ValueError("stdout not produced by bot")
+                raise ValueError
 
         # modify self.state based on the action
         Table.write_state_to_db(self.table_id, self.state)

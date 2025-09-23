@@ -64,7 +64,7 @@ def read_full_gamestate(table_id: str, _: User = Depends(verify_admin_user)):
 
 
 @admin_router.post("/tables/create/", responses=unauth_res)
-def create_tables():
+def create_tables(_: User = Depends(verify_admin_user)):
     tournament.insert_tables()
     return "success"
 
@@ -84,7 +84,10 @@ def delete_tables(_: User = Depends(verify_admin_user)):
 async def make_move_on_tables(
     table_ids: list[str] | None = None, _: User = Depends(verify_admin_user)
 ):
-    return await tournament.make_moves(table_ids)
+    try:
+        return await tournament.make_moves(table_ids)
+    except KeyError:
+        raise HTTPException(422, "table_ids invalid")
 
 
 @admin_router.post(
@@ -96,4 +99,9 @@ async def make_move_on_tables(
 async def make_move_on_table(
     table_id: str, raise_size: float, _: User = Depends(verify_admin_user)
 ):
-    return await tournament.make_moves([table_id], [raise_size])
+    try:
+        return await tournament.make_moves([table_id], [raise_size])
+    except KeyError:
+        raise HTTPException(422, "table_id invalid")
+    except ValueError:
+        raise HTTPException(500, "stdout not produced by bot")
