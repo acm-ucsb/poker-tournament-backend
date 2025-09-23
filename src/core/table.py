@@ -67,12 +67,18 @@ class Table:
 
         def push_index_to_action():
             s.index_to_action = (s.index_to_action + 1) % len(s.players)
-            while s.bet_money[s.index_to_action] == -1:
+            while (
+                s.bet_money[s.index_to_action] == -1
+                or s.held_money[s.index_to_action] == 0
+            ):
                 s.index_to_action = (s.index_to_action + 1) % len(s.players)
 
         def new_round_set_index_to_action():
             s.index_to_action = s.index_of_small_blind
-            while s.bet_money[s.index_to_action] == -1:
+            while (
+                s.bet_money[s.index_to_action] == -1
+                or s.held_money[s.index_to_action] == 0
+            ):
                 s.index_to_action = (s.index_to_action + 1) % len(s.players)
 
         def new_hands():
@@ -114,10 +120,11 @@ class Table:
 
         max_bet = max(s.bet_money)
         total_bet = s.bet_money[s.index_to_action] + raise_size
+        is_all_in = raise_size == s.held_money[s.index_to_action]
 
-        # check for: enough money condition, bet calls max_bet, bet raises with at least min raise (2x)
+        # check for: enough money condition, bet calls max_bet, bet raises with at least min raise (2x), is all-in
         if s.held_money[s.index_to_action] >= raise_size and (
-            total_bet == max_bet or total_bet >= 2 * max_bet
+            total_bet == max_bet or total_bet >= 2 * max_bet or is_all_in
         ):
             curr_team = s.players[s.index_to_action]
             if curr_team in s.pots[0].players:  # 0-th pot is the main pot
@@ -153,7 +160,7 @@ class Table:
             action_result = "only one player left. new hands."
             return action_result
 
-        # check if can move onto next betting round (meaning all people called max_bet, folded, or hold no more money)
+        # check if can move onto next betting round (meaning all people called max_bet, or folded, or hold no more money for all-ins)
         round_over = True
         for i in range(len(s.players)):
             if not (
@@ -190,6 +197,51 @@ class Table:
         )
 
         if not big_blind_can_check and round_over:
+            # ===================== #
+            # start create sidepots #
+            # ===================== #
+
+            bet_size_indexes_dict: dict[float, list[int]] = {}
+            for i, bet in enumerate(s.bet_money):
+                if bet > 0:
+                    bet_size_indexes_dict.setdefault(bet, []).append(i)
+
+            # sort by smallest bet value ascending
+            bet_size_indexes_tuples = list(
+                zip(bet_size_indexes_dict.keys(), bet_size_indexes_dict.values())
+            )
+            bet_size_indexes_tuples.sort(key=lambda x: x[0])
+
+            # for computing number of indexes
+            prefix_sums = [0]
+            sum = 0
+            for i in bet_size_indexes_tuples:
+                sum += len(bet_size_indexes_tuples[1])
+                prefix_sums.append(sum)
+
+            # only make sidepots if more than 1 bet_size. otherwise change nothing!
+            if len(bet_size_indexes_tuples) > 1:
+                # remove all current round bet sizings from main pot
+                for tup in bet_size_indexes_tuples:
+                    s.pots[0].value -= tup[0] * len(tup[1])
+
+                # add smallest bet sizing for the pot of this sizing
+                s.pots[0].value += bet_size_indexes_tuples[0][0] * prefix_sums[-1]
+
+                for i, tup in enumerate(bet_size_indexes_tuples[1:]):
+                    new_pot = copy.deepcopy(s.pots[0])
+                    # value of new sidepot is difference between larger bet and smaller bet, * len(all) - len(poorer: i cuz prefix sums are +1)
+                    new_pot.value = (tup[0] - bet_size_indexes_tuples[i - 1][0]) * (
+                        prefix_sums[-1] - prefix_sums[i]
+                    )
+                    for poorer_player_index in bet_size_indexes_tuples[i - 1][1]:
+                        new_pot.players.remove(s.players[poorer_player_index])
+                    s.pots.insert(0, new_pot)
+
+            # ===================== #
+            # end sidepots creating #
+            # ===================== #
+
             # resetting bet_money to 0, except for folded players
             for i in range(len(s.bet_money)):
                 if s.bet_money[i] != -1:
