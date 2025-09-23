@@ -6,7 +6,7 @@ from src.util.auth import verify_admin_user
 from src.util.supabase_client import db_client
 import src.util.helpers as helpers
 from src.core.table import Table
-from src.core.tournament import Tournament, tournament
+from src.core.tournament import tournament
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -64,14 +64,14 @@ def read_full_gamestate(table_id: str, _: User = Depends(verify_admin_user)):
 
 
 @admin_router.post("/tables/create/", responses=unauth_res)
-def create_tables(_: User = Depends(verify_admin_user)):
-    Tournament.insert_tables()
+def create_tables():
+    tournament.insert_tables()
     return "success"
 
 
 @admin_router.delete("/tables/delete/", responses=unauth_res)
 def delete_tables(_: User = Depends(verify_admin_user)):
-    Tournament.delete_tables()
+    tournament.delete_tables()
     return "success"
 
 
