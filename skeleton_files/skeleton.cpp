@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+
 // #include <string>
 // #include <vector>
 
@@ -13,7 +14,6 @@
 
 // class GameState {
 // public:
-//   size_t index_to_action;
 //   vector<string> players;
 //   vector<string> player_cards;
 //   vector<double> held_money;
@@ -21,8 +21,6 @@
 //   vector<string> community_cards;
 //   vector<Pot> pots;
 //   string current_round;
-//   double small_blind;
-//   double big_blind;
 // };
 
 // ================================ //
@@ -55,10 +53,6 @@ vector<double> split_into_doubles(string &s) {
 }
 
 void set_state_input(GameState &state) {
-  string index_to_action_line;
-  getline(cin, index_to_action_line);
-  state.index_to_action = stoull(index_to_action_line);
-
   string players_line;
   getline(cin, players_line);
   state.players = split(players_line);
@@ -98,14 +92,6 @@ void set_state_input(GameState &state) {
   state.pots = pots;
 
   getline(cin, state.current_round);
-
-  string sb_line;
-  getline(cin, sb_line);
-  state.small_blind = stod(sb_line);
-
-  string bb_line;
-  getline(cin, bb_line);
-  state.big_blind = stod(bb_line);
 }
 
 int main() {

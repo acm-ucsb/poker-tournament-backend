@@ -4,7 +4,6 @@ class Pot:
 
 
 class GameState:
-    index_to_action: int
     players: list[str]
     player_cards: list[str]
     held_money: list[float]
@@ -12,8 +11,6 @@ class GameState:
     community_cards: list[str]
     pots: list[Pot]
     current_round: str
-    small_blind: float
-    big_blind: float
 
 
 # DO NOT CHANGE ABOVE CODE OR FUNCTION SIGNATURE ELSE YOUR CODE WILL NOT RUN!

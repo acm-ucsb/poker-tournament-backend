@@ -190,10 +190,10 @@ async def save_insert_into_skeleton(team_id: str, suffix: str, content: str):
 
 
 def into_stdin_format(state: GameState) -> str:
-    state_str = str(state.index_to_action) + "\n"
+    state_str = ""
     state_str += " ".join(state.players) + "\n"
-    # only list of two cards of the current player can be shown!!! so [index_to_action]
-    state_str += " ".join(state.players_cards[state.index_to_action]) + "\n"
+    # only first list of two cards of the current player can be shown!!! so [0]
+    state_str += " ".join(state.players_cards[0]) + "\n"
     state_str += " ".join(map(str, state.held_money)) + "\n"
     state_str += " ".join(map(str, state.bet_money)) + "\n"
     state_str += " ".join(state.community_cards) + "\n"
@@ -202,8 +202,6 @@ def into_stdin_format(state: GameState) -> str:
         state_str += str(pot.value) + " "
         state_str += " ".join(pot.players) + "\n"
     state_str += state.current_round + "\n"
-    state_str += str(state.small_blind) + "\n"
-    state_str += str(state.big_blind) + "\n"
 
     return state_str
 

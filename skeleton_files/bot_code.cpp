@@ -1,4 +1,3 @@
-#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -12,7 +11,6 @@ public:
 
 class GameState {
 public:
-  size_t index_to_action;
   vector<string> players;
   vector<string> player_cards;
   vector<double> held_money;
@@ -20,8 +18,6 @@ public:
   vector<string> community_cards;
   vector<Pot> pots;
   string current_round;
-  double small_blind;
-  double big_blind;
 };
 
 // DO NOT CHANGE ABOVE CODE OR FUNCTION SIGNATURE ELSE YOUR CODE WILL NOT RUN!
