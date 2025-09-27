@@ -23,7 +23,7 @@ class SubmittedFile(BaseModel):
 
 
 class Pot(BaseModel):
-    value: float  # money in pot
+    value: int  # money in pot
     players: list[str]  # players vying for this pot, team_ids
 
 
@@ -33,12 +33,12 @@ class GameState(BaseModel):
     index_of_small_blind: int  # action starts here
     players: list[str]  # team_ids
     players_cards: list[list[str]]  # list of two card strs per team by index
-    held_money: list[float]  # money per team by index
-    bet_money: list[float]  # per round by index, -1 for fold, 0 for check/hasn't bet
+    held_money: list[int]  # money per team by index
+    bet_money: list[int]  # per round by index, -1 for fold, 0 for check/hasn't bet
     community_cards: list[str]
     pots: list[Pot]  # list for the case of sidepots
-    small_blind: float
-    big_blind: float
+    small_blind: int
+    big_blind: int
 
 
 class FileRunResult(TypedDict):

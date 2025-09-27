@@ -7,7 +7,7 @@
 
 // class Pot {
 // public:
-//   double value;
+//   int value;
 //   vector<string> players;
 // };
 
@@ -17,12 +17,12 @@
 //   size_t index_of_small_blind;
 //   vector<string> players;
 //   vector<string> player_cards;
-//   vector<double> held_money;
-//   vector<double> bet_money;
+//   vector<int> held_money;
+//   vector<int> bet_money;
 //   vector<string> community_cards;
 //   vector<Pot> pots;
-//   double small_blind;
-//   double big_blind;
+//   int small_blind;
+//   int big_blind;
 // };
 
 // ================================ //
@@ -42,13 +42,13 @@ vector<string> split(string &s) {
   return tokens;
 }
 
-vector<double> split_into_doubles(string &s) {
-  vector<double> tokens;
+vector<int> split_into_ints(string &s) {
+  vector<int> tokens;
   stringstream ss(s);
 
   string token;
   while (getline(ss, token, ' ')) {
-    tokens.push_back(stod(token));
+    tokens.push_back(stoi(token));
   }
 
   return tokens;
@@ -73,11 +73,11 @@ void set_state_input(GameState &state) {
 
   string held_money_line;
   getline(cin, held_money_line);
-  state.held_money = split_into_doubles(held_money_line);
+  state.held_money = split_into_ints(held_money_line);
 
   string bet_money_line;
   getline(cin, bet_money_line);
-  state.bet_money = split_into_doubles(bet_money_line);
+  state.bet_money = split_into_ints(bet_money_line);
 
   string community_cards_line;
   getline(cin, community_cards_line);
@@ -94,7 +94,7 @@ void set_state_input(GameState &state) {
     vector<string> pot_vec = split(pot_line);
 
     Pot p;
-    p.value = stod(pot_vec[0]);
+    p.value = stoi(pot_vec[0]);
     p.players = vector<string>(pot_vec.begin() + 1, pot_vec.end());
 
     pots.emplace_back(p);
@@ -103,11 +103,11 @@ void set_state_input(GameState &state) {
 
   string sb_line;
   getline(cin, sb_line);
-  state.small_blind = stod(sb_line);
+  state.small_blind = stoi(sb_line);
 
   string bb_line;
   getline(cin, bb_line);
-  state.big_blind = stod(bb_line);
+  state.big_blind = stoi(bb_line);
 }
 
 int main() {

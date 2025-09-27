@@ -6,7 +6,7 @@ using namespace std;
 
 class Pot {
 public:
-  double value;
+  int value;
   vector<string> players;
 };
 
@@ -16,12 +16,12 @@ public:
   size_t index_of_small_blind;
   vector<string> players;
   vector<string> player_cards;
-  vector<double> held_money;
-  vector<double> bet_money;
+  vector<int> held_money;
+  vector<int> bet_money;
   vector<string> community_cards;
   vector<Pot> pots;
-  double small_blind;
-  double big_blind;
+  int small_blind;
+  int big_blind;
 };
 
 // DO NOT CHANGE ABOVE CODE OR FUNCTION SIGNATURE ELSE YOUR CODE WILL NOT RUN!

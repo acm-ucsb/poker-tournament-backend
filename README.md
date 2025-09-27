@@ -27,7 +27,7 @@ This is the internal schema for the json sent to frontend, and the state object 
 
 ```py
 class Pot:
-    value: float  # money in pot
+    value: int  # money in pot
     players: list[str]  # players vying for this pot, team_ids
 
 
@@ -37,12 +37,12 @@ class GameState:
     index_of_small_blind: int  # action starts here
     players: list[str]  # team_ids
     players_cards: list[list[str]]  # list of two card strs per team by index
-    held_money: list[float]  # money per team by index
-    bet_money: list[float]  # per round by index, -1 for fold, 0 for check/hasn't bet
+    held_money: list[int]  # money per team by index
+    bet_money: list[int]  # per round by index, -1 for fold, 0 for check/hasn't bet
     community_cards: list[str]
     pots: list[Pot]  # list for the case of sidepots
-    small_blind: float
-    big_blind: float
+    small_blind: int
+    big_blind: int
 ```
 
 The bot code functions get almost the same schema, EXCEPT `GameState.players_cards` becomes `player_cards` and is just a list of str. In cpp, list becomes vector.
@@ -59,11 +59,11 @@ The bot code functions get almost the same schema, EXCEPT `GameState.players_car
     ["th", "3c"],
     ["2s", "7s"]
   ],
-  "held_money": [100.0, 200.0, 300.0],
-  "bet_money": [20.0, -1.0, 0.0],
+  "held_money": [100, 200, 300],
+  "bet_money": [20, -1, 0],
   "community_cards": ["ac", "2h", "2d"],
-  "pots": [{ "value": 50.0, "players": ["team_id0", "team_id2"] }],
-  "small_blind": 5.0,
+  "pots": [{ "value": 50, "players": ["team_id0", "team_id2"] }],
+  "small_blind": 5,
   "big_blind": 10
 }
 ```

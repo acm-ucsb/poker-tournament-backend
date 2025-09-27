@@ -8,9 +8,9 @@ import copy
 
 from src.core.hand import FULL_DECK, Hand
 
-DEFAULT_SB = 5.0
-DEFAULT_BB = 10.0
-DEFAULT_STARTING_STACK = 1000.0
+DEFAULT_SB = 5
+DEFAULT_BB = 10
+DEFAULT_STARTING_STACK = 1000
 
 
 class Table:
@@ -57,7 +57,7 @@ class Table:
     # raise_size: -1 = fold, 0 check, >0 raise their own bet amt
     # TODO: last_change
     @staticmethod
-    def apply_bet(s: GameState, raise_size: float):
+    def apply_bet(s: GameState, raise_size: int):
         def fold():
             s.bet_money[s.index_to_action] = -1
             for p in s.pots:
@@ -201,7 +201,7 @@ class Table:
             # start sidepot logic #
             # =================== #
 
-            bet_size_indexes_dict: dict[float, list[int]] = {}
+            bet_size_indexes_dict: dict[int, list[int]] = {}
             for i, bet in enumerate(s.bet_money):
                 if bet > 0:
                     bet_size_indexes_dict.setdefault(bet, []).append(i)
@@ -279,9 +279,20 @@ class Table:
                             # early break because all hands that aren't equal will be less. cuz sorted
                             break
 
-                    money_for_each = pot.value / len(winners)
+                    money_for_each = pot.value // len(winners)
                     for winner in winners:
                         s.held_money[winner[1]] += money_for_each
+
+                    # distribute remainder from split pot to out-of-position players first (sb -> dealer/btn)
+                    rem = pot.value % len(winners)
+                    if rem > 0:
+                        winners_indexes = [winner[1] for winner in winners]
+                        farthest_index = s.index_of_small_blind
+                        while rem > 0:
+                            if farthest_index in winners_indexes:
+                                s.held_money[farthest_index] += 1
+                                rem -= 1
+                            farthest_index = (farthest_index + 1) % len(s.players)
 
                 new_hands()
                 action_result = "best hand at showdown wins. new hands."
@@ -360,7 +371,7 @@ class Table:
         self.table_id: str = table_id
         self.state: GameState = Table.read_state_from_db(table_id)
 
-    async def make_move(self, raise_size: float | None = None):
+    async def make_move(self, raise_size: int | None = None):
         # human or bot move, default None for bot, float for human input
 
         result_str = ""
@@ -375,7 +386,7 @@ class Table:
             )
             bot_raise_str = res.get("stdout")
             if bot_raise_str is not None:
-                result_str = Table.apply_bet(self.state, float(bot_raise_str))
+                result_str = Table.apply_bet(self.state, int(bot_raise_str))
             else:
                 raise ValueError
 

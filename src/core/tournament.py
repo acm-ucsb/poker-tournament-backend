@@ -107,7 +107,7 @@ class Tournament:
         self._sync_tables()
 
     async def make_moves(
-        self, table_ids: list[str] | None = None, moves: list[float] | None = None, /
+        self, table_ids: list[str] | None = None, moves: list[int] | None = None, /
     ):
         # table_ids to specify which tables to make moves on, default None for make_move on all
         # moves is for human moves so must be same len as table_ids, default None for no human moves
