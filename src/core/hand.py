@@ -1,4 +1,5 @@
 from functools import total_ordering
+from enum import IntEnum
 
 # mapped to 2-14 (ace := 14)
 RANKS = ["a", "2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k"]
@@ -6,18 +7,16 @@ RANKS = ["a", "2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k"]
 SUITS = ["s", "d", "c", "h"]
 FULL_DECK = [rank + suit for suit in SUITS for rank in RANKS]
 
-HAND_TYPES = {
-    "straight_flush": 8,
-    "four_of_a_kind": 7,
-    "full_house": 6,
-    "flush": 5,
-    "straight": 4,
-    "three_of_a_kind": 3,
-    "two_pair": 2,
-    "pair": 1,
-    "high_card": 0,
-}
-
+class HandType(IntEnum):
+    straight_flush  = 8
+    four_of_a_kind  = 7
+    full_house      = 6
+    flush           = 5
+    straight        = 4
+    three_of_a_kind = 3
+    two_pair        = 2
+    pair            = 1
+    high_card       = 0
 
 # class used within Hand only!
 # ordering by ranks (eq not by suit, only rank)!
@@ -274,54 +273,54 @@ class Hand:
         straight_flush = Hand.straight(all_flush) if all_flush is not None else None
         if straight_flush is not None:
             self.cards = straight_flush
-            self.type = "straight flush"
+            self.type = HandType.straight_flush
             return
 
         four_of_a_kind = Hand.four_of_a_kind(cards, rank_occurences)
         if four_of_a_kind is not None:
             self.cards = four_of_a_kind
-            self.type = "four of a kind"
+            self.type = HandType.four_of_a_kind
             return
 
         full_house = Hand.full_house(cards, rank_occurences)
         if full_house is not None:
             self.cards = full_house
-            self.type = "full_house"
+            self.type = HandType.full_house
             return
 
         flush = all_flush[:5] if all_flush is not None else None
         if flush is not None:
             self.cards = flush
-            self.type = "flush"
+            self.type = HandType.flush
             return
 
         straight = Hand.straight(cards)
         if straight is not None:
             self.cards = straight
-            self.type = "straight"
+            self.type = HandType.straight
             return
 
         three_of_a_kind = Hand.three_of_a_kind(cards, rank_occurences)
         if three_of_a_kind is not None:
             self.cards = three_of_a_kind
-            self.type = "three_of_a_kind"
+            self.type = HandType.three_of_a_kind
             return
 
         two_pair = Hand.two_pair(cards, rank_occurences)
         if two_pair is not None:
             self.cards = two_pair
-            self.type = "two_pair"
+            self.type = HandType.two_pair
             return
 
         pair = Hand.pair(cards, rank_occurences)
         if pair is not None:
             self.cards = pair
-            self.type = "pair"
+            self.type = HandType.pair
             return
 
         high_card = cards[:5]
         self.cards = high_card
-        self.type = "high_card"
+        self.type = HandType.high_card
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Hand):
@@ -334,13 +333,13 @@ class Hand:
             raise self.comparison_err
 
         # True if type is greater
-        if HAND_TYPES[self.type] > HAND_TYPES[other.type]:
+        if self.type > other.type:
             return True
 
         # lexicographical comparison!!!
         # works because most important cards (higher rank) will be order in the right way
         # suit will not affect, Card __eq__ is only based on rank
-        if HAND_TYPES[self.type] == HAND_TYPES[other.type]:
+        if self.type == other.type:
             return self.cards > other.cards
 
         return False
