@@ -32,10 +32,47 @@ class Table:
         # set difference
         diff = list(set(FULL_DECK) - set(used_cards))
         return shuffle_copy(diff)
+    
+    #inserts a player into the most optimal spot in the table
+    @staticmethod
+    def insert_player(s: GameState, team_id:str, held_money = 0):
+        button = s.index_of_small_blind
+        while (s.players[(button+8)%8] != "" and button != (s.index_of_small_blind + 1)%8):
+            button = (button - 1)
+
+        if button == s.index_of_small_blind:
+            return False # table full
+
+        s.players[button] = team_id
+        s.held_money[button] = held_money
+
+        Table.write_state_to_db(s)
+
+        return True # successful insert
+    
+    # returns a list of vacant seats based on priority
+    @staticmethod
+    def get_vacant_seats(s: GameState) -> list[int]:
+        size = len(s.players)
+        vacant_seats = []
+
+        start = (s.index_of_small_blind + 1)%size
+        priority = 1
+        for i in range(start, start+size):
+            if s.players[i%size] == "":
+                vacant_seats.append(priority)
+            priority += 1
+
+        return vacant_seats.sort() # returned in priority order
+
 
     @staticmethod
     def rotate_blinds(s: GameState):
         s.index_of_small_blind = (s.index_of_small_blind + 1) % len(s.players)
+
+    @staticmethod
+    def table_size(s: GameState) -> int:
+        return len([1 for player in s.players if player is not ""])
 
     # blind spots need sufficient money for blind values. main pot must exist.
     @staticmethod
