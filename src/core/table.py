@@ -64,6 +64,31 @@ class Table:
             priority += 1
 
         return vacant_seats.sort() # returned in priority order
+    
+    # removes a number of random players from the table
+    @staticmethod
+    def remove_random_players(s: GameState, n: int):
+        size = Table.table_size(s)
+        if (n > size or n < 0):
+            raise ValueError()
+        
+        players = []
+
+        for i in range(n):
+            index = random.randint(0, size)
+            while (s.players[index] == ""):
+                index = random.randint(0, size)
+
+            data = (s.players[index], s.held_money[index])
+            # remove from previous state
+            s.players[index] = ""
+            s.held_money[index] = -2
+            s.players_cards[index] = []
+            players.append(data)
+    
+        # updated game state   
+        Table.write_state_to_db(s)
+        return players
 
 
     @staticmethod

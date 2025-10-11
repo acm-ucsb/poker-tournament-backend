@@ -168,8 +168,18 @@ class Tournament:
             raise ValueError("Cannot distribute players within table size constraints.")
         
         if num_tables < len(states):
-            smallest = [id for id, tb_size in sizes if tb_size == min_size][0] # smallest table id
-            self.close_smallest_table(states, smallest)
+            table_id_to_close = states.items()[random.randint(0, num_tables - 1)][0] # id of random table
+            self.close_smallest_table(states, table_id_to_close)
+            del self.tables[table_id_to_close]
+            del states[table_id_to_close]
+            del sizes[table_id_to_close]
+
+        
+        # after closing a table, may have to rearrange some players
+        min_size = min(sizes.values())
+        max_size = max(sizes.values())
+        if max_size - min_size > 1:
+            self.rearrange_players(states, num_players, len(sizes), sizes)
     
     def close_smallest_table(self, states: list[GameState], table_id):
         available_seats = []
@@ -211,7 +221,37 @@ class Tournament:
             "id", DEFAULT_TOURNAMENT_ID
         ).execute()
 
+    def rearrange_players(self, states: list[GameState], num_players: int, num_tables: int, 
+                            sizes):
+        players_per_table, extra = divmod(num_players, num_tables)
 
+        if (extra > 0 and players_per_table + 1 > 8) or players_per_table < 5:
+            raise ValueError("Cannot redistribute players with given table constraints")
+        
+        pool = []
+        for id, state in states.items():
+            if sizes[id] > players_per_table:
+                pool.extend(Table.remove_random_players(state, sizes[id] - players_per_table))
+                sizes[id] = players_per_table
+
+        for id, state in states.items():
+            if sizes[id] < players_per_table:
+                needed = players_per_table - sizes[id]
+                for _ in range(needed):
+                    Table.insert_player(state, pool[0][0], pool[0][1])
+                    pool = pool[1:]
+
+        # extra, the remaining should be less than the number of tables left
+        if len(pool) != 0:
+            for id, state in states.items():
+                if (len(pool) == 0):
+                    break
+                Table.insert_player(state, pool[0][0], pool[0][1])
+                pool = pool[1:]
+
+        # all game states should be updated with the new players at this point
+
+        
 
 
 
