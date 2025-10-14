@@ -35,7 +35,7 @@ class Table:
     
     #inserts a player into the most optimal spot in the table
     @staticmethod
-    def insert_player(s: GameState, team_id:str, held_money = 0):
+    def insert_player(s: GameState, table_id, team_id:str, held_money = 0):
         button = s.index_of_small_blind
         while (s.players[(button+8)%8] != "" and button != (s.index_of_small_blind + 1)%8):
             button = (button - 1)
@@ -46,7 +46,7 @@ class Table:
         s.players[button] = team_id
         s.held_money[button] = held_money
 
-        Table.write_state_to_db(s)
+        Table.write_state_to_db(table_id=table_id, state=s)
 
         return True # successful insert
     
@@ -55,19 +55,19 @@ class Table:
     def get_vacant_seats(s: GameState) -> list[int]:
         size = len(s.players)
         vacant_seats = []
-
+        print(s)
         start = (s.index_of_small_blind + 1)%size
-        priority = 1
+        priority = 8
         for i in range(start, start+size):
             if s.players[i%size] == "":
                 vacant_seats.append(priority)
-            priority += 1
-
-        return vacant_seats.sort() # returned in priority order
+            priority -= 1
+        vacant_seats = sorted(vacant_seats)
+        return vacant_seats # returned in priority order
     
     # removes a number of random players from the table
     @staticmethod
-    def remove_random_players(s: GameState, n: int):
+    def remove_random_players(s: GameState, table_id: str, n: int):
         size = Table.table_size(s)
         if (n > size or n < 0):
             raise ValueError()
@@ -75,7 +75,7 @@ class Table:
         players = []
 
         for i in range(n):
-            index = random.randint(0, size)
+            index = random.randint(0, size - 1)
             while (s.players[index] == ""):
                 index = random.randint(0, size)
 
@@ -83,11 +83,11 @@ class Table:
             # remove from previous state
             s.players[index] = ""
             s.held_money[index] = -2
-            s.players_cards[index] = []
+            #s.players_cards[index] = []
             players.append(data)
     
         # updated game state   
-        Table.write_state_to_db(s)
+        Table.write_state_to_db(table_id, s)
         return players
 
 
@@ -421,8 +421,9 @@ class Table:
             .single()
             .execute()
         )
-        state_dict = json.loads(state_res.data["game_state"])
-        return GameState(**state_dict)
+        # print(state_res)
+        # state_dict = json.loads(state_res.data['game_state'])
+        return GameState(**state_res.data['game_state'])
 
     @staticmethod
     def write_state_to_db(table_id: str, state: GameState):

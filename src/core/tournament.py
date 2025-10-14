@@ -131,7 +131,7 @@ class Tournament:
     def retrieve_states(self):
         states = {}
         for id, table in self.tables.items():
-            states[id] = table.read_state_from_db()
+            states[id] = table.read_state_from_db(id)
         return states
     
     def reassign(self):
@@ -139,7 +139,7 @@ class Tournament:
         # type 1 reassign -> close a table and reassign its players
         # type 2 reassign -> move around players to balance tables
 
-        states = self.retrive_states()
+        states = self.retrieve_states()
 
         if (len(states) <= 1):
             return # no reassignment possible
@@ -168,8 +168,9 @@ class Tournament:
             raise ValueError("Cannot distribute players within table size constraints.")
         
         if num_tables < len(states):
-            table_id_to_close = states.items()[random.randint(0, num_tables - 1)][0] # id of random table
+            table_id_to_close = random.choice(list(states.keys()))
             self.close_smallest_table(states, table_id_to_close)
+            print(table_id_to_close)
             del self.tables[table_id_to_close]
             del states[table_id_to_close]
             del sizes[table_id_to_close]
@@ -207,16 +208,17 @@ class Tournament:
         for player, held_money in players_to_reassign:
             if idx >= len(available_seats):
                 raise ValueError("Not enough available seats to reassign players.")
-            Table.insert_player(states[available_seats[idx][0]], player, held_money)
+            Table.insert_player(states[available_seats[idx][0]], available_seats[idx][0], player, held_money)
+            idx+=1
             # should never return false
             # insert players into tables based on priority
 
         # delete table from db
-        db_client.table("tables").delete().neq(
+        db_client.table("tables").delete().eq(
             "id", table_id
         ).execute()
         
-        table_ids = [id for id, state in states if id != table_id]
+        table_ids = [id for id, state in states.items() if id != table_id]
         db_client.table("tournaments").update({"tables": table_ids}).eq(
             "id", DEFAULT_TOURNAMENT_ID
         ).execute()
@@ -231,22 +233,25 @@ class Tournament:
         pool = []
         for id, state in states.items():
             if sizes[id] > players_per_table:
-                pool.extend(Table.remove_random_players(state, sizes[id] - players_per_table))
+                pool.extend(Table.remove_random_players(state, id, sizes[id] - players_per_table))
                 sizes[id] = players_per_table
+
 
         for id, state in states.items():
             if sizes[id] < players_per_table:
                 needed = players_per_table - sizes[id]
                 for _ in range(needed):
-                    Table.insert_player(state, pool[0][0], pool[0][1])
+                    # print(pool)
+                    Table.insert_player(state, id, pool[0][0], pool[0][1])
                     pool = pool[1:]
+                    # print(pool)
 
         # extra, the remaining should be less than the number of tables left
         if len(pool) != 0:
             for id, state in states.items():
                 if (len(pool) == 0):
                     break
-                Table.insert_player(state, pool[0][0], pool[0][1])
+                Table.insert_player(state, id, pool[0][0], pool[0][1])
                 pool = pool[1:]
 
         # all game states should be updated with the new players at this point
