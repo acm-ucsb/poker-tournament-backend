@@ -169,7 +169,7 @@ class Tournament:
         
         if num_tables < len(states):
             table_id_to_close = random.choice(list(states.keys()))
-            self.close_smallest_table(states, table_id_to_close)
+            self.close_table(states, table_id_to_close)
             print(table_id_to_close)
             del self.tables[table_id_to_close]
             del states[table_id_to_close]
@@ -182,7 +182,7 @@ class Tournament:
         if max_size - min_size > 1:
             self.rearrange_players(states, num_players, len(sizes), sizes)
     
-    def close_smallest_table(self, states: list[GameState], table_id):
+    def close_table(self, states: list[GameState], table_id):
         available_seats = []
 
         for id, state in states.items():
@@ -235,16 +235,14 @@ class Tournament:
             if sizes[id] > players_per_table:
                 pool.extend(Table.remove_random_players(state, id, sizes[id] - players_per_table))
                 sizes[id] = players_per_table
-
+        print(sizes)
 
         for id, state in states.items():
             if sizes[id] < players_per_table:
                 needed = players_per_table - sizes[id]
                 for _ in range(needed):
-                    # print(pool)
                     Table.insert_player(state, id, pool[0][0], pool[0][1])
                     pool = pool[1:]
-                    # print(pool)
 
         # extra, the remaining should be less than the number of tables left
         if len(pool) != 0:

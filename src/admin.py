@@ -10,6 +10,10 @@ from src.core.tournament import tournament
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
+python_whitelist = ['numpy', 'random'] # not including ml packages/libraries
+# for cpp just including using namespace std is enough, so there shouldn't be any
+# other imports
+
 
 @admin_router.get("/test/", response_model=str)
 def is_admin(_: User = Depends(verify_admin_user)):
@@ -47,6 +51,34 @@ async def get_submission_by_team_id(team_id: str, _: User = Depends(verify_admin
         )
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+async def check_imports_in_file(team_id):
+    try:
+        data = await get_submission_by_team_id(team_id=team_id)
+    except HTTPException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    
+    content = data[1].splitlines()
+    fileName = data[0]
+
+    if fileName.endswith(".py"):
+        for line in content:
+            if line.startswith("import") or line.startswith("from"):
+                found = False
+                for word in python_whitelist:
+                    if word in line:
+                        found = True
+                        break
+                if not found:
+                    raise ValueError("Illegal Import")
+    elif fileName.endswith(".cpp"):
+        for line in content:
+            if line.startswith("#include"):
+                raise ValueError("No external imports allowed in c++")
+    else:
+        raise ValueError("Unsupported File Type")
+    
+    return "All valid imports"
 
 
 @admin_router.post(

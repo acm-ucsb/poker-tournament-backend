@@ -37,15 +37,16 @@ class Table:
     @staticmethod
     def insert_player(s: GameState, table_id, team_id:str, held_money = 0):
         button = s.index_of_small_blind
-        while (s.players[(button+8)%8] != "" and button != (s.index_of_small_blind + 1)%8):
+        counter = 0
+        while (s.players[(button+8)%8] != "" and counter != 8):
             button = (button - 1)
+            counter += 1 # counts the number of visited seats
 
-        if button == s.index_of_small_blind:
+        if counter == 8:
             return False # table full
 
         s.players[button] = team_id
         s.held_money[button] = held_money
-
         Table.write_state_to_db(table_id=table_id, state=s)
 
         return True # successful insert
@@ -77,15 +78,13 @@ class Table:
         for i in range(n):
             index = random.randint(0, size - 1)
             while (s.players[index] == ""):
-                index = random.randint(0, size)
-
+                index = random.randint(0, size - 1)
             data = (s.players[index], s.held_money[index])
             # remove from previous state
             s.players[index] = ""
             s.held_money[index] = -2
             #s.players_cards[index] = []
             players.append(data)
-    
         # updated game state   
         Table.write_state_to_db(table_id, s)
         return players
