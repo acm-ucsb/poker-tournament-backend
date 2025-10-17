@@ -50,7 +50,7 @@ async def get_submission_by_team_id(team_id: str, _: User = Depends(verify_admin
 
 
 @admin_router.post(
-    "/submission/run/", response_model=FileRunResult, responses=unauth_res
+    "/submission/testrun/", response_model=FileRunResult, responses=unauth_res
 )
 async def run_code_by_team_id(
     team_id: str, state: GameState, _: User = Depends(verify_admin_user)
@@ -105,3 +105,19 @@ async def make_move_on_table(
         raise HTTPException(422, "table_id invalid")
     except ValueError:
         raise HTTPException(500, "stdout not produced by bot")
+
+
+@admin_router.put(
+    "/tables/{table_id}/state/",
+    responses=unauth_res,
+    description="for setting cards when playing irl with humans and physical cards.",
+)
+async def change_state(
+    table_id: str, s: GameState, _: User = Depends(verify_admin_user)
+):
+    try:
+        tournament.tables[table_id].state = s
+        Table.write_state_to_db(table_id, s)
+        return "success"
+    except KeyError:
+        raise HTTPException(422, "table_id invalid")

@@ -359,8 +359,17 @@ class Table:
             .single()
             .execute()
         )
-        state_dict = json.loads(state_res.data["game_state"])
-        return GameState(**state_dict)
+
+        # sometimes supabase returns a str, sometimes gives a dict??? what. weird discrepancies with jsonb return format...
+        raw_state = state_res.data["game_state"]
+        if isinstance(raw_state, str):
+            return GameState(**json.loads(raw_state))
+        if isinstance(raw_state, dict):
+            return GameState(**raw_state)
+        else:
+            raise ValueError(
+                "supabase geekin. some formatting differences returning str or dict."
+            )
 
     @staticmethod
     def write_state_to_db(table_id: str, state: GameState):
