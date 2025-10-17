@@ -399,3 +399,11 @@ class Table:
         visible_state = copy.deepcopy(self.state)
         visible_state.players_cards.clear()
         return visible_state
+
+    def multiply_blinds_by(self, n: int | None):
+        if n is None:
+            n = 2
+
+        self.state.small_blind *= n
+        self.state.big_blind *= n
+        Table.write_state_to_db(self.table_id, self.state)

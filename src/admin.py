@@ -105,3 +105,15 @@ async def make_move_on_table(
         raise HTTPException(422, "table_id invalid")
     except ValueError:
         raise HTTPException(500, "stdout not produced by bot")
+
+
+@admin_router.post(
+    "/tournament/increase_blind/",
+    responses=unauth_res,
+    description="increase blind by blind *= n, default is 2 without passing n.",
+)
+def increase_blind(n: int | None = None, _: User = Depends(verify_admin_user)):
+    for t_id in tournament.tables:
+        tournament.tables[t_id].multiply_blinds_by(n)
+
+    return "success"
