@@ -8,9 +8,9 @@ import copy
 
 from src.core.hand import FULL_DECK, Hand
 
-DEFAULT_SB = 5
-DEFAULT_BB = 10
-DEFAULT_STARTING_STACK = 1000
+DEFAULT_SB = 50
+DEFAULT_BB = 100
+DEFAULT_STARTING_STACK = 7500
 
 
 class Table:
@@ -379,9 +379,15 @@ class Table:
     def __init__(self, table_id: str):
         self.table_id: str = table_id
         self.state: GameState = Table.read_state_from_db(table_id)
+        self.is_running = False
 
     async def make_move(self, raise_size: int | None = None):
         # human or bot move, default None for bot, float for human input
+
+        # SURELY THIS WORKS AND PREVENTS SEVERAL TABLE STEPS AT ONCE.
+        if self.is_running:
+            return  # dont let table run if still running.
+        self.is_running = True
 
         result_str = ""
 
@@ -393,14 +399,18 @@ class Table:
             res = await helpers.run_file(
                 self.state.players[self.state.index_to_action], self.state
             )
+
             bot_raise_str = res.get("stdout")
             if bot_raise_str is not None:
                 result_str = Table.apply_bet(self.state, int(bot_raise_str))
             else:
-                raise ValueError
+                result_str = Table.apply_bet(self.state, -1)  # autofold
 
         # modify self.state based on the action
         Table.write_state_to_db(self.table_id, self.state)
+
+        # allow table to be run again.
+        self.is_running = False
 
         return result_str
 
