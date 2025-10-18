@@ -59,6 +59,7 @@ class Tournament:
             db_client.table("teams")
             .select("id")
             .eq("has_submitted_code", True)
+            .eq("is_disqualified", False)
             .execute()
         )
 
