@@ -7,16 +7,18 @@ RANKS = ["a", "2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k"]
 SUITS = ["s", "d", "c", "h"]
 FULL_DECK = [rank + suit for suit in SUITS for rank in RANKS]
 
+
 class HandType(IntEnum):
-    straight_flush  = 8
-    four_of_a_kind  = 7
-    full_house      = 6
-    flush           = 5
-    straight        = 4
+    straight_flush = 8
+    four_of_a_kind = 7
+    full_house = 6
+    flush = 5
+    straight = 4
     three_of_a_kind = 3
-    two_pair        = 2
-    pair            = 1
-    high_card       = 0
+    two_pair = 2
+    pair = 1
+    high_card = 0
+
 
 # class used within Hand only!
 # ordering by ranks (eq not by suit, only rank)!
@@ -25,6 +27,10 @@ class Card:
     comparison_err = TypeError("Card can only be compared with other Card instances.")
 
     def __init__(self, card_str: str):
+        # raise error card_str is invalid
+        if len(card_str) != 2 or card_str[0] not in RANKS or card_str[1] not in SUITS:
+            raise ValueError("The card_str for Card is invalid.")
+
         # mapped to 2-14 (ace := 14)
         self.rank: int = 14 if card_str[0] == "a" else RANKS.index(card_str[0])
         # mapped to 0-3
@@ -258,6 +264,14 @@ class Hand:
 
     # cards must be >= 5. will determine best hand.
     def __init__(self, card_strs: list[str]):
+        # throw error if card_strs invalid: duplicate cards, len < 5
+        if len(set(card_strs)) < len(card_strs):
+            raise ValueError("Hand cannot have duplicate strings in card_strs.")
+        if len(card_strs) < 5:
+            raise ValueError(
+                "The length of card_strs for Hand must be greater or equal to 5."
+            )
+
         # Card list with HIGHER RANK cards first!!!
         cards = sorted(list(map(Card, card_strs)), reverse=True)
 
