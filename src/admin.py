@@ -81,11 +81,9 @@ def delete_tables(_: User = Depends(verify_admin_user)):
     responses=unauth_res,
     description="table_ids for specifying which tables to make one move on with bots (default all).",
 )
-async def make_move_on_tables(
-    table_ids: list[str] | None = None, _: User = Depends(verify_admin_user)
-):
+async def make_move_on_tables(_: User = Depends(verify_admin_user)):
     try:
-        return await tournament.make_moves(table_ids)
+        return await tournament.make_moves()
     except KeyError:
         raise HTTPException(422, "table_ids invalid")
 
