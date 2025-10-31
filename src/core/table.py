@@ -49,7 +49,45 @@ class Table:
         s.held_money[button] = held_money
         Table.write_state_to_db(table_id=table_id, state=s)
 
+         # change teams table entry to new table id
+        db_client.table("teams").update(
+            {table_id: table_id}
+        ).eq("id", team_id).execute()
+
         return True # successful insert
+    
+    @staticmethod
+    def get_denomination(bet_money: int, denominations: list[int]) -> dict[int, int]:
+        """
+        given a list of denominations and a bet money amount,
+        return a dict of a breakdown of how many of each chip is needed
+        greedy so takes as many of the largest denomination first and
+        trickles down. 
+        preconditions:
+           a linear combination of the denominations can make up the bet_money
+        """
+        if bet_money < 0:
+            raise ValueError("bet money cannot be negative")
+        if denominations == []:
+            raise ValueError("denominations cannot be empty")
+        if not isinstance(denominations, list):
+            raise TypeError(f"Expected a list, but got {type(denominations).__name__}")    
+        if not all(isinstance(item, int) for item in denominations):
+            raise TypeError("All items in the denominations list must be integers")
+        if not all(item > 0 for item in denominations):
+            raise ValueError("Denominations must all be positive integers")
+        
+        remaining = bet_money
+        result = {}
+
+        for denom in sorted(denominations, reverse=True):
+            count = remaining // denom
+            if count > 0:
+                result[denom] = count
+                remaining -= denom * count
+
+        return result
+        
     
     # returns a list of vacant seats based on priority
     @staticmethod
