@@ -62,11 +62,14 @@ def main():
         with open(filename, "rb") as f:
             memory = pickle.load(f)
 
-    bet_amt, memory = bet(state, memory)
+    try:
+        bet_amt, memory = bet(state, memory)
     
-    if memory is not None:
-        with open(filename, "wb") as f:
-            pickle.dump(memory, f, protocol=pickle.HIGHEST_PROTOCOL)
+        if memory is not None:
+            with open(filename, "wb") as f:
+                pickle.dump(memory, f, protocol=pickle.HIGHEST_PROTOCOL)
+    except Exception:
+        bet_amt = -1
     
     print(bet_amt)
 
