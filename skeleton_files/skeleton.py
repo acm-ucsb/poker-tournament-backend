@@ -1,3 +1,7 @@
+import pickle
+import sys
+import os
+
 # class Pot:
 #     value: int
 #     players: list[str]
@@ -14,6 +18,9 @@
 #     pots: list[Pot]
 #     small_blind: int
 #     big_blind: int
+
+# class Memory:
+#     pass
 
 # ======================= #
 # ACTUAL BOT CODE HERE!!! #
@@ -47,8 +54,21 @@ def main():
     state = GameState()
 
     set_state_input(state)
+    
+    filename = ".".join(sys.argv[0].split(".")[:-1]) + ".pkl"
+    memory = None
+    
+    if os.path.isfile(filename):
+        with open(filename, "rb") as f:
+            memory = pickle.load(f)
 
-    print(bet(state))
+    bet_amt, memory = bet(state, memory)
+    
+    if memory is not None:
+        with open(filename, "wb") as f:
+            pickle.dump(memory, f, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    print(bet_amt)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+# <DO NOT MODIFY>
 class Pot:
     value: int
     players: list[str]
@@ -14,11 +15,12 @@ class GameState:
     pots: list[Pot]
     small_blind: int
     big_blind: int
+# </DO NOT MODIFY>
 
+class Memory:
+    pass
 
-# DO NOT CHANGE ABOVE CODE OR FUNCTION SIGNATURE ELSE YOUR CODE WILL NOT RUN!
-# except... some libraries can be imported
-
-
-def bet(state: GameState) -> int:
-    return 0
+# DO NOT MODIFY THE FUNCTION SIGNATURE
+def bet(state: GameState, memory: Memory | None=None) -> tuple[int, Memory | None]:
+    bet_amount = 0
+    return (bet_amount, memory)
