@@ -6,7 +6,8 @@ from src.util.auth import verify_admin_user
 from src.util.supabase_client import db_client
 import src.util.helpers as helpers
 from src.core.table import Table
-from src.core.tournament import tournament
+from src.core.tournament import tournament, Tournament
+from typing import Optional
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -81,9 +82,12 @@ def delete_tables(_: User = Depends(verify_admin_user)):
     responses=unauth_res,
     description="table_ids for specifying which tables to make one move on with bots (default all).",
 )
-async def make_move_on_tables(_: User = Depends(verify_admin_user)):
+async def make_move_on_tables(
+    tournament_id: Optional[str] = None, _: User = Depends(verify_admin_user)
+):
     try:
-        return await tournament.make_moves()
+        t = Tournament(tournament_id) if tournament_id is not None else tournament
+        return await t.make_moves()
     except KeyError:
         raise HTTPException(422, "table_ids invalid")
 
