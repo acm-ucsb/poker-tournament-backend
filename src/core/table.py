@@ -304,7 +304,7 @@ class Table:
     # CREATES TABLE
     # INSERTS TABLE ENTRY INTO DB, RETURNS TABLE ID
     @staticmethod
-    def insert(team_ids: list[str]) -> str:
+    def insert(team_ids: list[str], tournament_id: str) -> str:
         # insert row into db
         # new table
         cards = Table.available_cards_shuffled()
@@ -339,7 +339,11 @@ class Table:
         Table.apply_blinds(new_state)
 
         # write new entry into tables db
-        row_entry_json = {"status": "active", "game_state": new_state.model_dump_json()}
+        row_entry_json = {
+            "status": "active",
+            "game_state": new_state.model_dump_json(),
+            "tournament_id": tournament_id,
+        }
         entry_res = db_client.table("tables").insert(row_entry_json).execute()
         table_id: str = entry_res.data[0]["id"]
 
