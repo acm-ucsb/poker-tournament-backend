@@ -116,13 +116,22 @@ class Tournament:
 
         if table_ids is not None and moves is not None:
             for id, move in zip(table_ids, moves):
-                result_strs.append(await self.tables[id].make_move(move))
+                try:
+                    result_strs.append(await self.tables[id].make_move(move))
+                except BaseException:
+                    result_strs.append("did not run")
         elif table_ids is not None:
             for id in table_ids:
-                result_strs.append(await self.tables[id].make_move())
+                try:
+                    result_strs.append(await self.tables[id].make_move())
+                except BaseException:
+                    result_strs.append("did not run")
         else:
             for table in self.tables.values():
-                result_strs.append(await table.make_move())
+                try:
+                    result_strs.append(await table.make_move())
+                except BaseException:
+                    result_strs.append("did not run")
 
         return result_strs
 
