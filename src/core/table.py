@@ -344,7 +344,7 @@ class Table:
         # write new entry into tables db
         row_entry_json = {
             "status": "active",
-            "game_state": new_state.model_dump_json(),
+            "game_state": new_state.model_dump(),
             "tournament_id": tournament_id,
         }
         entry_res = db_client.table("tables").insert(row_entry_json).execute()
@@ -380,7 +380,7 @@ class Table:
 
     @staticmethod
     def write_state_to_db(table_id: str, state: GameState):
-        update_json = {"game_state": state.model_dump_json()}
+        update_json = {"game_state": state.model_dump()}
         db_client.table("tables").update(update_json).eq("id", table_id).execute()
 
     def __init__(self, table_id: str):
