@@ -123,7 +123,10 @@ class Table:
         is_all_in = raise_size == s.held_money[s.index_to_action]
 
         # check for: enough money condition, bet calls max_bet, bet raises with at least min raise (2x), is all-in
-        if s.held_money[s.index_to_action] >= raise_size and (
+        if raise_size == -1:
+            fold()
+            action_result = f"folded (raise_size: {raise_size})."
+        elif s.held_money[s.index_to_action] >= raise_size and (
             total_bet == max_bet or total_bet >= 2 * max_bet or is_all_in
         ):
             curr_team = s.players[s.index_to_action]
