@@ -3,6 +3,8 @@ from src.core.table import Table
 import random
 import math
 
+import traceback
+
 MAX_TABLE_SIZE = 9
 DEFAULT_TOURNAMENT_ID = "f6fd507b-42fb-4fba-a0d3-e9ded05aeca5"
 
@@ -114,24 +116,14 @@ class Tournament:
         # moves is for human moves so must be same len as table_ids, default None for no human moves
         result_strs = []
 
-        if table_ids is not None and moves is not None:
-            for id, move in zip(table_ids, moves):
-                try:
-                    result_strs.append(await self.tables[id].make_move(move))
-                except BaseException:
-                    result_strs.append("did not run")
-        elif table_ids is not None:
-            for id in table_ids:
-                try:
-                    result_strs.append(await self.tables[id].make_move())
-                except BaseException:
-                    result_strs.append("did not run")
-        else:
-            for table in self.tables.values():
-                try:
-                    result_strs.append(await table.make_move())
-                except BaseException:
-                    result_strs.append("did not run")
+        for table in self.tables.values():
+            try:
+                result_strs.append(await table.make_move())
+            except BaseException as e:
+                print(e)
+                result_strs.append(
+                    f"did not run, {e}, {e.args}, {e.with_traceback(None)}, {traceback.format_exc()}"
+                )
 
         return result_strs
 
