@@ -136,11 +136,11 @@ class Table:
             else:
                 # not in main pot for some reason??
                 fold()
-                action_result = "invalid action. autofold."
+                action_result = f"invalid action (raise_size: {raise_size}). autofold."
         else:
             # autofold cuz invalid
             fold()
-            action_result = "invalid action. autofold."
+            action_result = f"invalid action (raise_size: {raise_size}). autofold."
 
         # WIN lOGIC POINT: ONLY ONE LEFT VYING FOR POT
         # check if only one player vying for pot and distribute. sidepots might still need to determine winners.
@@ -390,7 +390,7 @@ class Table:
 
         # SURELY THIS WORKS AND PREVENTS SEVERAL TABLE STEPS AT ONCE.
         if self.is_running:
-            return  # dont let table run if still running.
+            return ""  # dont let table run if still running.
         self.is_running = True
 
         result_str = ""
@@ -405,8 +405,8 @@ class Table:
             )
 
             bot_raise_str = res.get("stdout")
-            if bot_raise_str is not None:
-                result_str = Table.apply_bet(self.state, int(bot_raise_str))
+            if res.get("status") == "success" and bot_raise_str is not None:
+                result_str = Table.apply_bet(self.state, int(bot_raise_str.strip()))
             else:
                 result_str = Table.apply_bet(self.state, -1)  # autofold
 
