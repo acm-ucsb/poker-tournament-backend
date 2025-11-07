@@ -6,6 +6,7 @@ import math
 MAX_TABLE_SIZE = 9
 DEFAULT_TOURNAMENT_ID = "f6fd507b-42fb-4fba-a0d3-e9ded05aeca5"
 
+BLIND_INCREASE = 1.5
 
 class Tournament:
     @staticmethod
@@ -125,6 +126,14 @@ class Tournament:
                 result_strs.append(await table.make_move())
 
         return result_strs
+    
+    def increase_blind_of_all_tables(self):
+        # increases blinds of all tables by BLIND_INCREASE factor
+        for table in self.tables.values():
+            table.state.small_blind = int(table.state.small_blind * BLIND_INCREASE)
+            table.state.big_blind = int(table.state.big_blind * BLIND_INCREASE)
+            
+            Table.write_state_to_db(table.table_id, table.state)
 
 
 # main instance!!!
