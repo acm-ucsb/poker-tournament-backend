@@ -1,7 +1,7 @@
 from functools import total_ordering
 from enum import IntEnum
 
-# mapped to 2-14 (ace := 14)
+# mapped to 2-14 (ace := 14), extra a is me being dumbahh
 RANKS = ["a", "a", "2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k"]
 # mapped to 0-3
 SUITS = ["s", "d", "c", "h"]

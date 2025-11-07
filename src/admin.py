@@ -52,7 +52,9 @@ async def get_submission_by_team_id(team_id: str, _: User = Depends(verify_admin
 @admin_router.post(
     "/submission/testrun/", response_model=FileRunResult, responses=unauth_res
 )
-async def run_code_by_team_id(team_id: str, state: GameState):
+async def run_code_by_team_id(
+    team_id: str, state: GameState, _: User = Depends(verify_admin_user)
+):
     return await helpers.run_file(team_id, state)
 
 
