@@ -1,7 +1,7 @@
 from functools import total_ordering
 from enum import IntEnum
 
-# mapped to 2-14 (ace := 14), extra a is me being dumbahh
+# mapped to 2-14 (ace := 14), extra a for 0 index to push 2 -> 2 index
 RANKS = ["a", "a", "2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k"]
 # mapped to 0-3
 SUITS = ["s", "d", "c", "h"]
@@ -32,7 +32,7 @@ class Card:
             raise ValueError("The card_str for Card is invalid.")
 
         # mapped to 2-14 (ace := 14)
-        self.rank: int = 14 if card_str[0] == "a" else RANKS.index(card_str[0]) + 1
+        self.rank: int = 14 if card_str[0] == "a" else RANKS.index(card_str[0])
         # mapped to 0-3
         self.suit: int = SUITS.index(card_str[1])
 
@@ -47,7 +47,7 @@ class Card:
         return self.rank > other.rank
 
     def __str__(self) -> str:
-        char1 = "a" if self.rank == 14 else RANKS[self.rank - 1]
+        char1 = "a" if self.rank == 14 else RANKS[self.rank]
         char2 = SUITS[self.suit]
 
         return char1 + char2
@@ -136,15 +136,14 @@ class Hand:
 
     @staticmethod
     def straight(cards: list[Card]):
-        def are_consecutive_cards(li: list[Card], start: int, span: int) -> bool:
+        def are_consecutive_desc_cards(li: list[Card], start: int, span: int) -> bool:
             if start + span > len(li) or len(li) < 2 or span < 2:
                 return False
 
-            # can be either asc or desc
-            direction = 1 if li[start] < li[start + 1] else -1
-            # check each two , start, end = start + span - 1
-            for i, card in enumerate(li[start : start + span - 1]):
-                if card.rank + direction != li[i + 1].rank:
+            # cards are in descending order, so check for decrements of 1
+            cards_slice = li[start : start + span]
+            for i in range(len(cards_slice) - 1):  # loop n - 1 times for checking pairs
+                if cards_slice[i].rank - 1 != cards_slice[i + 1].rank:
                     return False
 
             return True
@@ -157,11 +156,12 @@ class Hand:
         for i, card in enumerate(unique_cards):
             # ace exception
             if card.rank == 5 and unique_cards[0].rank == 14:
-                if are_consecutive_cards(unique_cards, i, 4):
-                    return unique_cards[0:1] + unique_cards[i : i + 4]
+                if are_consecutive_desc_cards(unique_cards, i, 4):
+                    # should be the smallest straight with 5 at the front and ace at the end
+                    return unique_cards[i : i + 4] + unique_cards[0:1]
 
             # consecutive check
-            if are_consecutive_cards(unique_cards, i, 5):
+            if are_consecutive_desc_cards(unique_cards, i, 5):
                 return unique_cards[i : i + 5]
 
         return None
