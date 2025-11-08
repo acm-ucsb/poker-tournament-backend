@@ -127,3 +127,19 @@ async def change_state(
         return "success"
     except KeyError:
         raise HTTPException(422, "table_id invalid")
+
+
+@admin_router.post(
+    "/increase_blind/",
+    responses=unauth_res,
+    description="increase blind for all tables in tournament",
+)
+async def increase_blind(
+    tournament_id: str | None = None, _: User = Depends(verify_admin_user)
+):
+    try:
+        t = Tournament(tournament_id) if tournament_id is not None else tournament
+        t.increase_blind_of_all_tables()
+        return "Successfully increased blinds for all tables."
+    except KeyError:
+        raise HTTPException(422, "table_ids invalid OR tournament_id invalid")
