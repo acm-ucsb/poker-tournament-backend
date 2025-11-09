@@ -5,7 +5,7 @@ from enum import IntEnum
 RANKS = ["a", "a", "2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k"]
 # mapped to 0-3
 SUITS = ["s", "d", "c", "h"]
-FULL_DECK = [rank + suit for suit in SUITS for rank in RANKS]
+FULL_DECK = [rank + suit for suit in SUITS for rank in RANKS[1:]]
 
 
 class HandType(IntEnum):

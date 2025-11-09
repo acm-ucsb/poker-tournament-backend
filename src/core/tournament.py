@@ -131,15 +131,11 @@ class Tournament:
 
     def increase_blind_of_all_tables(self):
         # increases blinds of all tables by BLIND_INCREASE factor
-        for id in self.tables:
-            self.tables[id].state.small_blind = int(
-                self.tables[id].state.small_blind * BLIND_INCREASE
-            )
-            self.tables[id].state.big_blind = int(
-                self.tables[id].state.big_blind * BLIND_INCREASE
-            )
+        for table in self.tables.values():
+            table.state.small_blind = int(table.state.small_blind * BLIND_INCREASE)
+            table.state.big_blind = int(table.state.big_blind * BLIND_INCREASE)
 
-            Table.write_state_to_db(id, self.tables[id].state)
+            Table.write_state_to_db(table.table_id, table.state)
 
         self._sync_tables()
 
