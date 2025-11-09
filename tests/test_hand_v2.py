@@ -1,10 +1,24 @@
 from functools import total_ordering
 from enum import IntEnum
 
-# mapped to 2-14 (ace := 14), extra a for 0 index to push 2 -> 2 index
-RANKS = ["a", "a", "2", "3", "4", "5", "6", "7", "8", "9", "t", "j", "q", "k"]
+# mapped to 2-14 (ace := 14)
+RANKS = {
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 7,
+    "8": 8,
+    "9": 9,
+    "t": 10,
+    "j": 11,
+    "q": 12,
+    "k": 13,
+    "a": 14,
+}
 # mapped to 0-3
-SUITS = ["s", "d", "c", "h"]
+SUITS = {"s": 0, "d": 1, "c": 2, "h": 3}
 FULL_DECK = [rank + suit for suit in SUITS for rank in RANKS]
 
 
@@ -26,15 +40,18 @@ class HandType(IntEnum):
 class Card:
     comparison_err = TypeError("Card can only be compared with other Card instances.")
 
+    RANK_TO_CHAR = {rank_val: char for char, rank_val in RANKS.items()}
+    SUIT_TO_CHAR = {suit_val: char for char, suit_val in SUITS.items()}
+
     def __init__(self, card_str: str):
         # raise error card_str is invalid
         if len(card_str) != 2 or card_str[0] not in RANKS or card_str[1] not in SUITS:
             raise ValueError("The card_str for Card is invalid.")
 
         # mapped to 2-14 (ace := 14)
-        self.rank: int = 14 if card_str[0] == "a" else RANKS.index(card_str[0])
+        self.rank: int = RANKS[card_str[0]]
         # mapped to 0-3
-        self.suit: int = SUITS.index(card_str[1])
+        self.suit: int = SUITS[card_str[1]]
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Card):
@@ -47,8 +64,8 @@ class Card:
         return self.rank > other.rank
 
     def __str__(self) -> str:
-        char1 = "a" if self.rank == 14 else RANKS[self.rank]
-        char2 = SUITS[self.suit]
+        char1 = Card.RANK_TO_CHAR[self.rank]
+        char2 = Card.SUIT_TO_CHAR[self.suit]
 
         return char1 + char2
 
@@ -87,7 +104,7 @@ class Hand:
     @staticmethod
     def four_of_a_kind(cards: list[Card], rank_occurrences: list[int]):
         quads = Hand.all_n_of_a_kind(4, cards, rank_occurrences)
-        if len(quads) == 0:
+        if len(quads) < 1:
             return None
 
         final_hand = quads[0]
@@ -180,7 +197,7 @@ class Hand:
                 flattened_trips += group
 
         # do any trips even exist?
-        if len(flattened_trips) == 0:
+        if len(flattened_trips) < 3:
             return None
 
         flattened_trips.sort(reverse=True)
@@ -212,8 +229,8 @@ class Hand:
             for group in pairs:
                 flattened_pairs += group
 
-        # do any pairs even exist?
-        if len(flattened_pairs) == 0:
+        # are there at least two pairs
+        if len(flattened_pairs) < 4:
             return None
 
         flattened_pairs.sort(reverse=True)
@@ -245,8 +262,8 @@ class Hand:
             for group in pairs:
                 flattened_pairs += group
 
-        # do any pairs even exist?
-        if len(flattened_pairs) == 0:
+        # are there at least one pair
+        if len(flattened_pairs) < 2:
             return None
 
         flattened_pairs.sort(reverse=True)
@@ -364,14 +381,9 @@ h = Hand(
     [
         "ad",
         "2c",
-        "3s",
-        "kc",
-        "th",
-        "9h",
-        "8h",
-        "jh",
-        "4c",
-        "5c",
+        "as",
+        "4h",
+        "5d",
     ]
 )
 print(h.type, h)
