@@ -137,6 +137,8 @@ class Tournament:
 
             Table.write_state_to_db(table.table_id, table.state)
 
+        self._sync_tables()
+
 
 # main instance!!!
 tournament = None
