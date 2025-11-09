@@ -123,7 +123,10 @@ class Table:
         is_all_in = raise_size == s.held_money[s.index_to_action]
 
         # check for: enough money condition, bet calls max_bet, bet raises with at least min raise (2x), is all-in
-        if s.held_money[s.index_to_action] >= raise_size and (
+        if raise_size == -1:
+            fold()
+            action_result = f"folded (raise_size: {raise_size})."
+        elif s.held_money[s.index_to_action] >= raise_size and (
             total_bet == max_bet or total_bet >= 2 * max_bet or is_all_in
         ):
             curr_team = s.players[s.index_to_action]
@@ -136,11 +139,11 @@ class Table:
             else:
                 # not in main pot for some reason??
                 fold()
-                action_result = "invalid action. autofold."
+                action_result = f"invalid action (raise_size: {raise_size}). autofold."
         else:
             # autofold cuz invalid
             fold()
-            action_result = "invalid action. autofold."
+            action_result = f"invalid action (raise_size: {raise_size}). autofold."
 
         # WIN lOGIC POINT: ONLY ONE LEFT VYING FOR POT
         # check if only one player vying for pot and distribute. sidepots might still need to determine winners.
@@ -216,7 +219,7 @@ class Table:
             prefix_sums = [0]
             sum = 0
             for i in bet_size_indexes_tuples:
-                sum += len(bet_size_indexes_tuples[1])
+                sum += len(i[1])
                 prefix_sums.append(sum)
 
             # only make sidepots if more than 1 bet_size. otherwise change nothing!
@@ -261,10 +264,20 @@ class Table:
                     # showdown. determine winner by comparing hands. distribute pots.
                     pot_player_indexes = list(map(s.players.index, pot.players))
                     pot_player_hands: list[Hand] = []
+
+                    # print("showdown: evaluating hands")
                     for i in pot_player_indexes:
-                        pot_player_hands.append(
-                            Hand(s.community_cards + s.players_cards[i])
-                        )
+                        curr_hand = Hand(s.community_cards + s.players_cards[i])
+                        pot_player_hands.append(curr_hand)
+
+                        # print("list of Card:", s.community_cards + s.players_cards[i])
+                        # print(
+                        #     "Hand result:",
+                        #     curr_hand,
+                        # )
+                        # print("hand type:", curr_hand.type)
+
+                        # print("===============================\n")
 
                     # tracks index of hand for players list
                     hand_index_tuples = list(zip(pot_player_hands, pot_player_indexes))
@@ -304,7 +317,7 @@ class Table:
     # CREATES TABLE
     # INSERTS TABLE ENTRY INTO DB, RETURNS TABLE ID
     @staticmethod
-    def insert(team_ids: list[str]) -> str:
+    def insert(team_ids: list[str], tournament_id: str) -> str:
         # insert row into db
         # new table
         cards = Table.available_cards_shuffled()
@@ -339,7 +352,11 @@ class Table:
         Table.apply_blinds(new_state)
 
         # write new entry into tables db
-        row_entry_json = {"status": "active", "game_state": new_state.model_dump_json()}
+        row_entry_json = {
+            "status": "active",
+            "game_state": new_state.model_dump(),
+            "tournament_id": tournament_id,
+        }
         entry_res = db_client.table("tables").insert(row_entry_json).execute()
         table_id: str = entry_res.data[0]["id"]
 
@@ -373,7 +390,7 @@ class Table:
 
     @staticmethod
     def write_state_to_db(table_id: str, state: GameState):
-        update_json = {"game_state": state.model_dump_json()}
+        update_json = {"game_state": state.model_dump()}
         db_client.table("tables").update(update_json).eq("id", table_id).execute()
 
     def __init__(self, table_id: str):
@@ -386,7 +403,7 @@ class Table:
 
         # SURELY THIS WORKS AND PREVENTS SEVERAL TABLE STEPS AT ONCE.
         if self.is_running:
-            return  # dont let table run if still running.
+            return ""  # dont let table run if still running.
         self.is_running = True
 
         result_str = ""
@@ -401,8 +418,8 @@ class Table:
             )
 
             bot_raise_str = res.get("stdout")
-            if bot_raise_str is not None:
-                result_str = Table.apply_bet(self.state, int(bot_raise_str))
+            if res.get("status") == "success" and bot_raise_str is not None:
+                result_str = Table.apply_bet(self.state, int(bot_raise_str.strip()))
             else:
                 result_str = Table.apply_bet(self.state, -1)  # autofold
 

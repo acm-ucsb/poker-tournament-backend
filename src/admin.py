@@ -7,7 +7,6 @@ from src.util.supabase_client import db_client
 import src.util.helpers as helpers
 from src.core.table import Table
 from src.core.tournament import tournament, Tournament
-from typing import Optional
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -65,9 +64,14 @@ def read_full_gamestate(table_id: str, _: User = Depends(verify_admin_user)):
 
 
 @admin_router.post("/tables/create/", responses=unauth_res)
-def create_tables(_: User = Depends(verify_admin_user)):
-    tournament.insert_tables()
-    return "success"
+def create_tables(
+    tournament_id: str | None = None, _: User = Depends(verify_admin_user)
+):
+    try:
+        t = Tournament(tournament_id) if tournament_id is not None else tournament
+        return t.insert_tables()
+    except KeyError:
+        raise HTTPException(422, "table_ids invalid")
 
 
 @admin_router.delete("/tables/delete/", responses=unauth_res)
@@ -83,7 +87,7 @@ def delete_tables(_: User = Depends(verify_admin_user)):
     description="table_ids for specifying which tables to make one move on with bots (default all).",
 )
 async def make_move_on_tables(
-    tournament_id: Optional[str] = None, _: User = Depends(verify_admin_user)
+    tournament_id: str | None = None, _: User = Depends(verify_admin_user)
 ):
     try:
         t = Tournament(tournament_id) if tournament_id is not None else tournament

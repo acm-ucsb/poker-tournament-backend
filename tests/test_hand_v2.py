@@ -358,3 +358,20 @@ class Hand:
 
     def __str__(self) -> str:
         return str(list(map(str, self.cards)))
+
+
+h = Hand(
+    [
+        "ad",
+        "2c",
+        "3s",
+        "kc",
+        "th",
+        "9h",
+        "8h",
+        "jh",
+        "4c",
+        "5c",
+    ]
+)
+print(h.type, h)

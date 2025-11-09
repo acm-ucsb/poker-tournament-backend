@@ -3,6 +3,8 @@ from src.core.table import Table
 import random
 import math
 
+import traceback
+
 MAX_TABLE_SIZE = 9
 DEFAULT_TOURNAMENT_ID = "f6fd507b-42fb-4fba-a0d3-e9ded05aeca5"
 
@@ -73,7 +75,7 @@ class Tournament:
         if len(teams) == 0:
             # no teams exist
             db_client.table("tournaments").update({"tables": []}).eq(
-                "id", DEFAULT_TOURNAMENT_ID
+                "id", self.tournament_id
             ).execute()
         else:
             num_groups = math.ceil(len(teams) / MAX_TABLE_SIZE)
@@ -85,12 +87,12 @@ class Tournament:
             for i in range(num_groups):
                 idx = i * chunk_len + ((i + 1) if i < rem else rem)
                 table_sublist = teams[idx : idx + chunk_len + (1 if i < rem else 0)]
-                new_table_id = Table.insert(table_sublist)
+                new_table_id = Table.insert(table_sublist, self.tournament_id)
                 table_ids.append(new_table_id)
 
             # set the tables in the tournament
             db_client.table("tournaments").update({"tables": table_ids}).eq(
-                "id", DEFAULT_TOURNAMENT_ID
+                "id", self.tournament_id
             ).execute()
 
         self._sync_tables()
@@ -104,7 +106,7 @@ class Tournament:
 
         # delete tables to update in the tournament entry
         db_client.table("tournaments").update({"tables": None}).eq(
-            "id", DEFAULT_TOURNAMENT_ID
+            "id", self.tournament_id
         ).execute()
 
         self._sync_tables()
@@ -116,15 +118,14 @@ class Tournament:
         # moves is for human moves so must be same len as table_ids, default None for no human moves
         result_strs = []
 
-        if table_ids is not None and moves is not None:
-            for id, move in zip(table_ids, moves):
-                result_strs.append(await self.tables[id].make_move(move))
-        elif table_ids is not None:
-            for id in table_ids:
-                result_strs.append(await self.tables[id].make_move())
-        else:
-            for table in self.tables.values():
+        for table in self.tables.values():
+            try:
                 result_strs.append(await table.make_move())
+            except BaseException as e:
+                print(e)
+                result_strs.append(
+                    f"did not run, {e}, {e.args}, {e.with_traceback(None)}, {traceback.format_exc()}"
+                )
 
         return result_strs
 
