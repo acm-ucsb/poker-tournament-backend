@@ -104,7 +104,7 @@ class Hand:
     @staticmethod
     def four_of_a_kind(cards: list[Card], rank_occurrences: list[int]):
         quads = Hand.all_n_of_a_kind(4, cards, rank_occurrences)
-        if len(quads) == 0:
+        if len(quads) < 1:
             return None
 
         final_hand = quads[0]
@@ -197,7 +197,7 @@ class Hand:
                 flattened_trips += group
 
         # do any trips even exist?
-        if len(flattened_trips) == 0:
+        if len(flattened_trips) < 3:
             return None
 
         flattened_trips.sort(reverse=True)
@@ -229,8 +229,8 @@ class Hand:
             for group in pairs:
                 flattened_pairs += group
 
-        # do any pairs even exist?
-        if len(flattened_pairs) == 0:
+        # are there at least two pairs
+        if len(flattened_pairs) < 4:
             return None
 
         flattened_pairs.sort(reverse=True)
@@ -262,8 +262,8 @@ class Hand:
             for group in pairs:
                 flattened_pairs += group
 
-        # do any pairs even exist?
-        if len(flattened_pairs) == 0:
+        # are there at least one pair
+        if len(flattened_pairs) < 2:
             return None
 
         flattened_pairs.sort(reverse=True)
