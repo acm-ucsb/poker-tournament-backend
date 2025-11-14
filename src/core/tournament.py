@@ -62,6 +62,7 @@ class Tournament:
             .select("id")
             .eq("has_submitted_code", True)
             .eq("is_disqualified", False)
+            .eq("tournament_id", self.tournament_id)
             .execute()
         )
 
