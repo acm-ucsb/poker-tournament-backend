@@ -308,9 +308,10 @@ class Table:
                     hand_index_tuples.sort(key=lambda x: x[0], reverse=True)
 
                     winners = [hand_index_tuples[0]]
-                    for i, hand in enumerate(hand_index_tuples[1:]):
+                    for hand in hand_index_tuples[1:]:
+                        # are other hands equal to the greatest hand!!!
                         if winners[0][0] == hand[0]:
-                            winners.append(hand_index_tuples[i])
+                            winners.append(hand)
                         else:
                             # early break because all hands that aren't equal will be less. cuz sorted
                             break
