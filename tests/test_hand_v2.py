@@ -377,13 +377,5 @@ class Hand:
         return str(list(map(str, self.cards)))
 
 
-h = Hand(
-    [
-        "ad",
-        "2c",
-        "as",
-        "4h",
-        "5d",
-    ]
-)
-print(h.type, h)
+comm = ["kh", "5c", "ah", "6c", "6h"]
+print(Hand(["7s", "4h", *comm]) == Hand(["7h", "4d", *comm]))

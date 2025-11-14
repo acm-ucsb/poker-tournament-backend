@@ -134,7 +134,7 @@ class Table:
             action_result = "table won. last one standing."
             return action_result
 
-        max_bet = max(s.bet_money)
+        max_bet = max([*s.bet_money, s.big_blind])  # greatest value or big blind
         total_bet = s.bet_money[s.index_to_action] + raise_size
         is_all_in = raise_size == s.held_money[s.index_to_action] and raise_size > 0
 
