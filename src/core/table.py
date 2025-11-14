@@ -43,13 +43,29 @@ class Table:
         index_bb = (s.index_of_small_blind + 1) % len(s.players)
         index_utg = (s.index_of_small_blind + 2) % len(s.players)
 
-        s.held_money[s.index_of_small_blind] -= s.small_blind
-        s.bet_money[s.index_of_small_blind] += s.small_blind
+        # not enough money to pay blinds. must go all-in.
+        if s.held_money[s.index_of_small_blind] < s.small_blind:
+            s.bet_money[s.index_of_small_blind] = s.held_money[s.index_of_small_blind]
+            s.held_money[s.index_of_small_blind] = 0
 
-        s.held_money[index_bb] -= s.big_blind
-        s.bet_money[index_bb] += s.big_blind
+            s.pots[0].value += s.bet_money[s.index_of_small_blind]
+        else:
+            s.bet_money[s.index_of_small_blind] += s.small_blind
+            s.held_money[s.index_of_small_blind] -= s.small_blind
 
-        s.pots[0].value += s.small_blind + s.big_blind
+            s.pots[0].value += s.small_blind
+
+        # same for big blind case. all-in.
+        if s.held_money[index_bb] < s.big_blind:
+            s.bet_money[index_bb] = s.held_money[index_bb]
+            s.held_money[index_bb] = 0
+
+            s.pots[0].value += s.bet_money[index_bb]
+        else:
+            s.bet_money[index_bb] += s.big_blind
+            s.held_money[index_bb] -= s.big_blind
+
+            s.pots[0].value += s.big_blind
 
         s.index_to_action = index_utg
 
@@ -120,7 +136,7 @@ class Table:
 
         max_bet = max(s.bet_money)
         total_bet = s.bet_money[s.index_to_action] + raise_size
-        is_all_in = raise_size == s.held_money[s.index_to_action]
+        is_all_in = raise_size == s.held_money[s.index_to_action] and raise_size > 0
 
         # check for: enough money condition, bet calls max_bet, bet raises with at least min raise (2x), is all-in
         if raise_size == -1:
@@ -231,11 +247,14 @@ class Table:
                 # add smallest bet sizing for the pot of this sizing
                 s.pots[0].value += bet_size_indexes_tuples[0][0] * prefix_sums[-1]
 
-                for i, tup in enumerate(bet_size_indexes_tuples[1:]):
+                for i in range(1, len(bet_size_indexes_tuples)):
+                    tup = bet_size_indexes_tuples[i]
+
                     new_pot = copy.deepcopy(s.pots[0])
+
                     # value of new sidepot is difference between larger bet and smaller bet, * len(all) - len(poorer: i cuz prefix sums are +1)
                     new_pot.value = (tup[0] - bet_size_indexes_tuples[i - 1][0]) * (
-                        prefix_sums[-1] - prefix_sums[i]
+                        prefix_sums[i + 1] - prefix_sums[i]
                     )
                     for poorer_player_index in bet_size_indexes_tuples[i - 1][1]:
                         new_pot.players.remove(s.players[poorer_player_index])
