@@ -8,8 +8,8 @@ import copy
 
 from src.core.hand import FULL_DECK, Hand
 
-DEFAULT_SB = 50
-DEFAULT_BB = 100
+DEFAULT_SB = 25
+DEFAULT_BB = 50
 DEFAULT_STARTING_STACK = 7500
 
 
