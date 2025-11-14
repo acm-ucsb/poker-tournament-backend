@@ -147,7 +147,10 @@ class Table:
             fold()
             action_result = f"folded (raise_size: {raise_size})."
         elif s.held_money[s.index_to_action] >= raise_size and (
-            total_bet == max_bet or total_bet >= 2 * max_bet or is_all_in
+            (max(s.bet_money) == 0 and raise_size == 0)
+            or total_bet == max_bet
+            or total_bet >= 2 * max_bet
+            or is_all_in
         ):
             curr_team = s.players[s.index_to_action]
             if curr_team in s.pots[0].players:  # 0-th pot is the main pot
