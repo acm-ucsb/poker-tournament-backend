@@ -8,8 +8,8 @@ import copy
 
 from src.core.hand import FULL_DECK, Hand
 
-DEFAULT_SB = 50
-DEFAULT_BB = 100
+DEFAULT_SB = 25
+DEFAULT_BB = 50
 DEFAULT_STARTING_STACK = 7500
 
 
@@ -43,13 +43,29 @@ class Table:
         index_bb = (s.index_of_small_blind + 1) % len(s.players)
         index_utg = (s.index_of_small_blind + 2) % len(s.players)
 
-        s.held_money[s.index_of_small_blind] -= s.small_blind
-        s.bet_money[s.index_of_small_blind] += s.small_blind
+        # not enough money to pay blinds. must go all-in.
+        if s.held_money[s.index_of_small_blind] < s.small_blind:
+            s.bet_money[s.index_of_small_blind] = s.held_money[s.index_of_small_blind]
+            s.held_money[s.index_of_small_blind] = 0
 
-        s.held_money[index_bb] -= s.big_blind
-        s.bet_money[index_bb] += s.big_blind
+            s.pots[0].value += s.bet_money[s.index_of_small_blind]
+        else:
+            s.bet_money[s.index_of_small_blind] += s.small_blind
+            s.held_money[s.index_of_small_blind] -= s.small_blind
 
-        s.pots[0].value += s.small_blind + s.big_blind
+            s.pots[0].value += s.small_blind
+
+        # same for big blind case. all-in.
+        if s.held_money[index_bb] < s.big_blind:
+            s.bet_money[index_bb] = s.held_money[index_bb]
+            s.held_money[index_bb] = 0
+
+            s.pots[0].value += s.bet_money[index_bb]
+        else:
+            s.bet_money[index_bb] += s.big_blind
+            s.held_money[index_bb] -= s.big_blind
+
+            s.pots[0].value += s.big_blind
 
         s.index_to_action = index_utg
 
@@ -111,6 +127,10 @@ class Table:
         # END OF HELPER FUNCTIONS FOR APPLY_BET #
         # ===================================== #
 
+        # AUTOMATIC ALL-IN FOR ANY RAISE GREATER THAN CURRENTLY HELD MONEY.
+        if raise_size > s.held_money[s.index_to_action]:
+            raise_size = s.held_money[s.index_to_action]
+
         action_result = f"raised bet by {raise_size}."  # temp result string
 
         # last one standing in entire game!
@@ -118,16 +138,19 @@ class Table:
             action_result = "table won. last one standing."
             return action_result
 
-        max_bet = max(s.bet_money)
+        max_bet = max([*s.bet_money, s.big_blind])  # greatest value or big blind
         total_bet = s.bet_money[s.index_to_action] + raise_size
-        is_all_in = raise_size == s.held_money[s.index_to_action]
+        is_all_in = raise_size == s.held_money[s.index_to_action] and raise_size > 0
 
         # check for: enough money condition, bet calls max_bet, bet raises with at least min raise (2x), is all-in
         if raise_size == -1:
             fold()
             action_result = f"folded (raise_size: {raise_size})."
         elif s.held_money[s.index_to_action] >= raise_size and (
-            total_bet == max_bet or total_bet >= 2 * max_bet or is_all_in
+            (max(s.bet_money) == 0 and raise_size == 0)
+            or total_bet == max_bet
+            or total_bet >= 2 * max_bet
+            or is_all_in
         ):
             curr_team = s.players[s.index_to_action]
             if curr_team in s.pots[0].players:  # 0-th pot is the main pot
@@ -139,7 +162,7 @@ class Table:
             else:
                 # not in main pot for some reason??
                 fold()
-                action_result = f"invalid action (raise_size: {raise_size}). autofold."
+                action_result = f"Not in main pot for some reason?? (raise_size: {raise_size}). autofold."
         else:
             # autofold cuz invalid
             fold()
@@ -231,11 +254,14 @@ class Table:
                 # add smallest bet sizing for the pot of this sizing
                 s.pots[0].value += bet_size_indexes_tuples[0][0] * prefix_sums[-1]
 
-                for i, tup in enumerate(bet_size_indexes_tuples[1:]):
+                for i in range(1, len(bet_size_indexes_tuples)):
+                    tup = bet_size_indexes_tuples[i]
+
                     new_pot = copy.deepcopy(s.pots[0])
+
                     # value of new sidepot is difference between larger bet and smaller bet, * len(all) - len(poorer: i cuz prefix sums are +1)
                     new_pot.value = (tup[0] - bet_size_indexes_tuples[i - 1][0]) * (
-                        prefix_sums[-1] - prefix_sums[i]
+                        prefix_sums[i + 1] - prefix_sums[i]
                     )
                     for poorer_player_index in bet_size_indexes_tuples[i - 1][1]:
                         new_pot.players.remove(s.players[poorer_player_index])
@@ -285,9 +311,10 @@ class Table:
                     hand_index_tuples.sort(key=lambda x: x[0], reverse=True)
 
                     winners = [hand_index_tuples[0]]
-                    for i, hand in enumerate(hand_index_tuples[1:]):
+                    for hand in hand_index_tuples[1:]:
+                        # are other hands equal to the greatest hand!!!
                         if winners[0][0] == hand[0]:
-                            winners.append(hand_index_tuples[i])
+                            winners.append(hand)
                         else:
                             # early break because all hands that aren't equal will be less. cuz sorted
                             break

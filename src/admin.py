@@ -122,7 +122,8 @@ async def change_state(
     table_id: str, s: GameState, _: User = Depends(verify_admin_user)
 ):
     try:
-        tournament.tables[table_id].state = s
+        if table_id in tournament.tables:
+            tournament.tables[table_id].state = s
         Table.write_state_to_db(table_id, s)
         return "success"
     except KeyError:
