@@ -162,7 +162,7 @@ class Table:
             else:
                 # not in main pot for some reason??
                 fold()
-                action_result = f"invalid action (raise_size: {raise_size}). autofold."
+                action_result = f"Not in main pot for some reason?? (raise_size: {raise_size}). autofold."
         else:
             # autofold cuz invalid
             fold()
