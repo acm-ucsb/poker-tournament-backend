@@ -127,6 +127,10 @@ class Table:
         # END OF HELPER FUNCTIONS FOR APPLY_BET #
         # ===================================== #
 
+        # AUTOMATIC ALL-IN FOR ANY RAISE GREATER THAN CURRENTLY HELD MONEY.
+        if raise_size > s.held_money[s.index_to_action]:
+            raise_size = s.held_money[s.index_to_action]
+
         action_result = f"raised bet by {raise_size}."  # temp result string
 
         # last one standing in entire game!
