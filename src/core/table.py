@@ -263,7 +263,9 @@ class Table:
                 sum += len(i[1])
                 prefix_sums.append(sum)
 
-            # only make sidepots if more than 1 bet_size. otherwise change nothing!
+            # make sidepots if all ins exist.
+
+            # case for all ins with several bet_sizes
             if len(bet_size_indexes_tuples) > 1:
                 # remove all current round bet sizings from main pot
                 for tup in bet_size_indexes_tuples:
@@ -284,6 +286,19 @@ class Table:
                     for poorer_player_index in bet_size_indexes_tuples[i - 1][1]:
                         new_pot.players.remove(s.players[poorer_player_index])
                     s.pots.insert(0, new_pot)
+
+            # sidepot check if pots[0] was the bet size of an all-in.
+            # this must create a pots[0] with 0 money!!!
+            all_ined_on_main: list[int] = []
+            for index in bet_size_indexes_tuples[0][1]:
+                if s.held_money[index] == 0:
+                    all_ined_on_main.append(index)
+
+            if 0 < len(all_ined_on_main) < len(s.pots[0].players):
+                new_pot = Pot(value=0, players=s.pots[0].players.copy())
+                for index in all_ined_on_main:
+                    new_pot.players.remove(s.players[index])
+                s.pots.insert(0, new_pot)
 
             # ================= #
             # end sidepot logic #
