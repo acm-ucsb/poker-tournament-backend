@@ -322,6 +322,22 @@ class Table:
                     if len(new_pot.players) >= 2:
                         s.pots.insert(0, new_pot)
 
+            # merge pots
+            i = 0
+            new_pots: list[Pot] = []
+            while i < len(s.pots):
+                merged_value = s.pots[i].value
+                j = i + 1
+                while j < len(s.pots):
+                    if len(s.pots[i].players) == len(s.pots[j].players):
+                        merged_value += s.pots[j].value
+                    else:
+                        i = j
+                        break
+                    j += 1
+                new_pots.append(Pot(value=merged_value, players=s.pots[i].players))
+            s.pots = new_pots
+
             # ================= #
             # end sidepot logic #
             # ================= #
