@@ -86,8 +86,9 @@ class Tournament:
             table_ids: list[str] = []
 
             for i in range(num_groups):
-                idx = i * chunk_len + ((i + 1) if i < rem else rem)
+                idx = i * chunk_len + i
                 table_sublist = teams[idx : idx + chunk_len + (1 if i < rem else 0)]
+
                 new_table_id = Table.insert(table_sublist, self.tournament_id)
                 table_ids.append(new_table_id)
 
