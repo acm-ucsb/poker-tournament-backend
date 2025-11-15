@@ -462,3 +462,6 @@ class Table:
         visible_state = copy.deepcopy(self.state)
         visible_state.players_cards.clear()
         return visible_state
+
+    def delete_from_db(self):
+        db_client.table("tables").delete().eq("id", self.table_id).execute()
