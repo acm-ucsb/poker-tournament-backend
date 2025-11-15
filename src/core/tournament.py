@@ -87,7 +87,8 @@ class Tournament:
 
             for i in range(num_groups):
                 idx = i * chunk_len + (i if i < rem else rem)
-                table_sublist = teams[idx : idx + chunk_len + (1 if i < rem else 0)]
+                table_sublist = teams[idx: idx +
+                                      chunk_len + (1 if i < rem else 0)]
 
                 new_table_id = Table.insert(table_sublist, self.tournament_id)
                 table_ids.append(new_table_id)
@@ -214,6 +215,19 @@ class Tournament:
                                 curr_table_state.players
                             )
 
+            # Remove players with 0 or negative chips ONLY if they're not in any pot
+            # (players who are all-in have 0 chips but are still competing for the pot)
+            players_in_pots = set()
+            for i in range(num_total_tables - num_remaining_tables):
+                for pot in sorted_tables[i].state.pots:
+                    players_in_pots.update(pot.players)
+
+            team_pool = {
+                team_id: chips
+                for team_id, chips in team_pool.items()
+                if chips > 0 or team_id in players_in_pots
+            }
+
             # LOOP: inserts from team pool into remaining tables
             i = num_total_tables - num_remaining_tables
             team_pool_list = list(team_pool.items())
@@ -333,7 +347,8 @@ class Tournament:
     def increase_blind_of_all_tables(self):
         # increases blinds of all tables by BLIND_INCREASE factor
         for table in self.tables.values():
-            table.state.small_blind = int(table.state.small_blind * BLIND_INCREASE)
+            table.state.small_blind = int(
+                table.state.small_blind * BLIND_INCREASE)
             table.state.big_blind = int(table.state.big_blind * BLIND_INCREASE)
 
             Table.write_state_to_db(table.table_id, table.state)
