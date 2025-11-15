@@ -158,7 +158,7 @@ class Tournament:
             num_total_tables >= 2
             and num_total_teams <= (num_total_tables - 1) * MAX_TABLE_SIZE
         ):
-            sorted_tables = sorted(
+            sorted_tables: list[Table] = sorted(
                 self.tables.values(), key=lambda x: len(x.state.players)
             )
 
@@ -231,8 +231,11 @@ class Tournament:
         # ============ #
 
         while True:
-            sorted_tables = sorted(
-                self.tables.values(), key=lambda x: len(x.state.players)
+            if len(self.tables) < 2:
+                break
+
+            sorted_tables: list[Table] = sorted(
+                list(self.tables.values()), key=lambda x: len(x.state.players)
             )
 
             min_table = sorted_tables[0]
