@@ -217,7 +217,8 @@ class Table:
             )
             n += 1
         # no checking through because no one can be last_to_action
-        index_last_to_action = -1
+        if n > len(s.players):
+            index_last_to_action = -1
 
         # all only checking or folds would end at last_to_action
         if s.index_to_action == index_last_to_action:
