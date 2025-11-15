@@ -112,14 +112,20 @@ class Tournament:
 
         self._sync_tables()
 
-    async def make_moves(
-        self, table_ids: list[str] | None = None, moves: list[int] | None = None, /
-    ):
-        # table_ids to specify which tables to make moves on, default None for make_move on all
-        # moves is for human moves so must be same len as table_ids, default None for no human moves
+    async def make_moves(self, table_id: str | None = None, move: int | None = None, /):
+        result_strs = []
+
+        # manual moves
+        if table_id is not None and move is not None:
+            try:
+                result_strs.append(await self.tables[table_id].make_move(move))
+            except BaseException as e:
+                print(e)
+                result_strs.append(
+                    f"did not run, {e}, {e.args}, {e.with_traceback(None)}, {traceback.format_exc()}"
+                )
 
         # actual running files!
-        result_strs = []
         for table in self.tables.values():
             try:
                 result_strs.append(await table.make_move())
