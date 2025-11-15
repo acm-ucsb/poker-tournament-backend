@@ -132,16 +132,16 @@ class Tournament:
                 result_strs.append(
                     f"did not run, {e}, {e.args}, {e.with_traceback(None)}, {traceback.format_exc()}"
                 )
-
-        # actual running files!
-        for table in t.tables.values():
-            try:
-                result_strs.append(await table.make_move())
-            except BaseException as e:
-                print(e)
-                result_strs.append(
-                    f"did not run, {e}, {e.args}, {e.with_traceback(None)}, {traceback.format_exc()}"
-                )
+        else:
+            # actual running files!
+            for table in t.tables.values():
+                try:
+                    result_strs.append(await table.make_move())
+                except BaseException as e:
+                    print(e)
+                    result_strs.append(
+                        f"did not run, {e}, {e.args}, {e.with_traceback(None)}, {traceback.format_exc()}"
+                    )
 
         def insert_player(tb: Table, team_id: str, held_money: int):
             index_before_sb = (
