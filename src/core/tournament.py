@@ -87,8 +87,7 @@ class Tournament:
 
             for i in range(num_groups):
                 idx = i * chunk_len + (i if i < rem else rem)
-                table_sublist = teams[idx: idx +
-                                      chunk_len + (1 if i < rem else 0)]
+                table_sublist = teams[idx : idx + chunk_len + (1 if i < rem else 0)]
 
                 new_table_id = Table.insert(table_sublist, self.tournament_id)
                 table_ids.append(new_table_id)
@@ -218,7 +217,10 @@ class Tournament:
             while len(team_pool_list) > 0:
                 curr_team = team_pool_list.pop()
                 # push to next table if too many players at this table
-                while i < len(sorted_tables) and len(sorted_tables[i].state.players) >= MAX_TABLE_SIZE:
+                while (
+                    i < len(sorted_tables)
+                    and len(sorted_tables[i].state.players) >= MAX_TABLE_SIZE
+                ):
                     i += 1
                     if i >= len(sorted_tables):
                         break
@@ -300,10 +302,12 @@ class Tournament:
             divided_main_pot_value = pot_value_without_current_round // len(
                 max_table.state.pots[0].players
             )
-            if bet_money >= 0:
-                held_money += divided_main_pot_value + bet_money
-                max_table.state.pots[0].value -= divided_main_pot_value + bet_money
-            max_table.state.pots[0].players.remove(team_id)
+            if team_id in max_table.state.pots[0].players:
+                if bet_money >= 0:
+                    held_money += divided_main_pot_value + bet_money
+                    max_table.state.pots[0].value -= divided_main_pot_value + bet_money
+
+                max_table.state.pots[0].players.remove(team_id)
 
             # case of if any sidepots exist
             for pot in max_table.state.pots[1:]:
@@ -329,8 +333,7 @@ class Tournament:
     def increase_blind_of_all_tables(self):
         # increases blinds of all tables by BLIND_INCREASE factor
         for table in self.tables.values():
-            table.state.small_blind = int(
-                table.state.small_blind * BLIND_INCREASE)
+            table.state.small_blind = int(table.state.small_blind * BLIND_INCREASE)
             table.state.big_blind = int(table.state.big_blind * BLIND_INCREASE)
 
             Table.write_state_to_db(table.table_id, table.state)
