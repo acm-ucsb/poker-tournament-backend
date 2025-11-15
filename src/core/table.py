@@ -83,19 +83,29 @@ class Table:
 
         def push_index_to_action():
             s.index_to_action = (s.index_to_action + 1) % len(s.players)
+            n = 0
             while (
                 s.bet_money[s.index_to_action] == -1
                 or s.held_money[s.index_to_action] == 0
             ):
                 s.index_to_action = (s.index_to_action + 1) % len(s.players)
+                n += 1
+                # if we've looped over all players, nothing is eligible to act
+                if n >= len(s.players):
+                    break
 
         def new_round_set_index_to_action():
             s.index_to_action = s.index_of_small_blind
+            n = 0
             while (
                 s.bet_money[s.index_to_action] == -1
                 or s.held_money[s.index_to_action] == 0
             ):
                 s.index_to_action = (s.index_to_action + 1) % len(s.players)
+                n += 1
+                # if no eligible players, mark index as -1 and exit
+                if n >= len(s.players):
+                    break
 
         def new_hands():
             # removing players that have no more money.
@@ -289,21 +299,23 @@ class Table:
                         prefix_sums[i + 1] - prefix_sums[i]
                     )
                     for poorer_player_index in bet_size_indexes_tuples[i - 1][1]:
-                        new_pot.players.remove(s.players[poorer_player_index])
+                        if s.players[poorer_player_index] in new_pot.players:
+                            new_pot.players.remove(s.players[poorer_player_index])
                     s.pots.insert(0, new_pot)
 
             if len(bet_size_indexes_tuples) > 0:
                 # sidepot check if pots[0] was the bet size of an all-in.
                 # this must create a pots[0] with 0 money!!!
                 all_ined_on_main: list[int] = []
-                for index in bet_size_indexes_tuples[0][1]:
+                for index in range(len(s.players)):
                     if s.held_money[index] == 0:
                         all_ined_on_main.append(index)
 
                 if 0 < len(all_ined_on_main) < len(s.pots[0].players):
                     new_pot = Pot(value=0, players=s.pots[0].players.copy())
                     for index in all_ined_on_main:
-                        new_pot.players.remove(s.players[index])
+                        if s.players[index] in new_pot.players:
+                            new_pot.players.remove(s.players[index])
                     s.pots.insert(0, new_pot)
 
             # ================= #
