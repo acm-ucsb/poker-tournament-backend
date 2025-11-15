@@ -58,6 +58,33 @@ async def run_code_by_team_id(
     return await helpers.run_file(team_id, state)
 
 
+@admin_router.post(
+    "/submission/roundedrun/",
+    response_model=int,
+    responses=unauth_res,
+    description="-2 would be error",
+)
+async def rounded_run_code_by_team_id(
+    team_id: str, state: GameState, _: User = Depends(verify_admin_user)
+):
+    result = await helpers.run_file(team_id, state)
+    raise_size_str = result.get("stdout")
+    if raise_size_str is None:
+        return -2
+
+    raise_size = int(raise_size_str)
+    denominations = [25, 100, 500, 1000]
+
+    rounded_value = 0
+    for denom in sorted(denominations, reverse=True):
+        count = raise_size // denom
+        if count > 0:
+            rounded_value += denom * count
+            raise_size -= denom * count
+
+    return rounded_value
+
+
 @admin_router.get("/tables/{table_id}/", response_model=GameState, responses=unauth_res)
 def read_full_gamestate(table_id: str, _: User = Depends(verify_admin_user)):
     return Table.read_state_from_db(table_id)
