@@ -143,6 +143,9 @@ class Tournament:
                         f"did not run, {e}, {e.args}, {e.with_traceback(None)}, {traceback.format_exc()}"
                     )
 
+        # Re-sync tables from database to get updated state after moves
+        t._sync_tables()
+
         def insert_player(tb: Table, team_id: str, held_money: int):
             index_before_sb = (
                 tb.state.index_of_small_blind - 1 + len(tb.state.players)
@@ -243,9 +246,6 @@ class Tournament:
             db_client.table("tournaments").update({"tables": remaining_table_ids}).eq(
                 "id", t.tournament_id
             ).execute()
-
-        # Re-sync tables from database to get updated state after moves
-        t._sync_tables()
 
         # ============ #
         # RETABLING!!! #
