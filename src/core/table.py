@@ -223,8 +223,12 @@ class Table:
         # all only checking or folds would end at last_to_action
         if s.index_to_action == index_last_to_action:
             all_checks_or_folds = True
-            for bet in s.bet_money:
-                if not (bet == 0 or bet == -1):
+            for index in range(len(s.players)):
+                if not (
+                    s.bet_money[index] == 0
+                    or s.bet_money[index] == -1
+                    or s.held_money[index] == 0
+                ):
                     # someone bet, not checked through
                     all_checks_or_folds = False
                     break
@@ -288,18 +292,19 @@ class Table:
                         new_pot.players.remove(s.players[poorer_player_index])
                     s.pots.insert(0, new_pot)
 
-            # sidepot check if pots[0] was the bet size of an all-in.
-            # this must create a pots[0] with 0 money!!!
-            all_ined_on_main: list[int] = []
-            for index in bet_size_indexes_tuples[0][1]:
-                if s.held_money[index] == 0:
-                    all_ined_on_main.append(index)
+            if len(bet_size_indexes_tuples) > 0:
+                # sidepot check if pots[0] was the bet size of an all-in.
+                # this must create a pots[0] with 0 money!!!
+                all_ined_on_main: list[int] = []
+                for index in bet_size_indexes_tuples[0][1]:
+                    if s.held_money[index] == 0:
+                        all_ined_on_main.append(index)
 
-            if 0 < len(all_ined_on_main) < len(s.pots[0].players):
-                new_pot = Pot(value=0, players=s.pots[0].players.copy())
-                for index in all_ined_on_main:
-                    new_pot.players.remove(s.players[index])
-                s.pots.insert(0, new_pot)
+                if 0 < len(all_ined_on_main) < len(s.pots[0].players):
+                    new_pot = Pot(value=0, players=s.pots[0].players.copy())
+                    for index in all_ined_on_main:
+                        new_pot.players.remove(s.players[index])
+                    s.pots.insert(0, new_pot)
 
             # ================= #
             # end sidepot logic #
