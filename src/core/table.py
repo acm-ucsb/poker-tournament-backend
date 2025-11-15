@@ -201,7 +201,10 @@ class Table:
         index_last_to_action = (s.index_of_small_blind + len(s.players) - 1) % len(
             s.players
         )
-        while s.bet_money[index_last_to_action] < 0:
+        while (
+            s.bet_money[index_last_to_action] == -1
+            or s.held_money[index_last_to_action] == 0
+        ):
             index_last_to_action = (index_last_to_action + len(s.players) - 1) % len(
                 s.players
             )
