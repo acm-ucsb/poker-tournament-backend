@@ -151,3 +151,25 @@ async def increase_blind(
         return "Successfully increased blinds for all tables."
     except KeyError:
         raise HTTPException(422, "table_ids invalid OR tournament_id invalid")
+
+
+@admin_router.post(
+    "/round_by_denominations/",
+    responses=unauth_res,
+    description="Greedy for denoms. If there are any negative or 0 denominations, it will go with the default denoms of [25, 100, 500, 1000].",
+)
+def round_by_denominations(
+    raise_size: int,
+    denominations: list[int] | None = None,
+    _: User = Depends(verify_admin_user),
+):
+    if denominations is None or min(denominations) <= 0:
+        denominations = [25, 100, 500, 1000]
+
+    result = {}
+    for denom in sorted(denominations, reverse=True):
+        count = raise_size // denom
+        if count > 0:
+            result[denom] = count
+            raise_size -= denom * count
+    return result
