@@ -161,161 +161,161 @@ class Tournament:
                 "id", team_id
             ).execute()
 
-        # # table reduction!
-        # num_total_tables = len(t.tables)
-        # num_total_teams = 0
-        # for table in t.tables.values():
-        #     num_total_teams += len(table.state.players)
+        # table reduction!
+        num_total_tables = len(t.tables)
+        num_total_teams = 0
+        for table in t.tables.values():
+            num_total_teams += len(table.state.players)
 
-        # if (
-        #     num_total_tables >= 2
-        #     and num_total_teams <= (num_total_tables - 1) * MAX_TABLE_SIZE
-        # ):
-        #     sorted_tables: list[Table] = sorted(
-        #         t.tables.values(), key=lambda x: len(x.state.players)
-        #     )
+        if (
+            num_total_tables >= 2
+            and num_total_teams <= (num_total_tables - 1) * MAX_TABLE_SIZE
+        ):
+            sorted_tables: list[Table] = sorted(
+                t.tables.values(), key=lambda x: len(x.state.players)
+            )
 
-        #     num_remaining_tables = math.ceil(num_total_teams / MAX_TABLE_SIZE)
+            num_remaining_tables = math.ceil(num_total_teams / MAX_TABLE_SIZE)
 
-        #     # dict of teams (team_id: held_money)
-        #     team_pool: dict[str, int] = {}
+            # dict of teams (team_id: held_money)
+            team_pool: dict[str, int] = {}
 
-        #     # LOOP: creates team pool of removed teams
-        #     for i in range(num_total_tables - num_remaining_tables):
-        #         curr_table_state = sorted_tables[i].state
+            # LOOP: creates team pool of removed teams
+            for i in range(num_total_tables - num_remaining_tables):
+                curr_table_state = sorted_tables[i].state
 
-        #         for index in range(len(curr_table_state.players)):
-        #             team_id = curr_table_state.players[index]
-        #             team_pool[team_id] = curr_table_state.held_money[index]
+                for index in range(len(curr_table_state.players)):
+                    team_id = curr_table_state.players[index]
+                    team_pool[team_id] = curr_table_state.held_money[index]
 
-        #             bet_money = curr_table_state.bet_money[index]
-        #             if bet_money > 0:
-        #                 team_pool[team_id] += bet_money
-        #                 curr_table_state.pots[0].value -= bet_money
+                    bet_money = curr_table_state.bet_money[index]
+                    if bet_money > 0:
+                        team_pool[team_id] += bet_money
+                        curr_table_state.pots[0].value -= bet_money
 
-        #         for pot in curr_table_state.pots:
-        #             money_for_each = pot.value // len(pot.players)
-        #             for p in pot.players:
-        #                 team_pool[p] += money_for_each
+                for pot in curr_table_state.pots:
+                    money_for_each = pot.value // len(pot.players)
+                    for p in pot.players:
+                        team_pool[p] += money_for_each
 
-        #             # distribute remainder from split pot to out-of-position players first (sb -> dealer/btn)
-        #             rem = pot.value % len(pot.players)
-        #             if rem > 0:
-        #                 farthest_index = curr_table_state.index_of_small_blind
-        #                 while rem > 0:
-        #                     if curr_table_state.players[farthest_index] in pot.players:
-        #                         team_pool[curr_table_state.players[farthest_index]] += 1
-        #                         rem -= 1
-        #                     farthest_index = (farthest_index + 1) % len(
-        #                         curr_table_state.players
-        #                     )
+                    # distribute remainder from split pot to out-of-position players first (sb -> dealer/btn)
+                    rem = pot.value % len(pot.players)
+                    if rem > 0:
+                        farthest_index = curr_table_state.index_of_small_blind
+                        while rem > 0:
+                            if curr_table_state.players[farthest_index] in pot.players:
+                                team_pool[curr_table_state.players[farthest_index]] += 1
+                                rem -= 1
+                            farthest_index = (farthest_index + 1) % len(
+                                curr_table_state.players
+                            )
 
-        #     # LOOP: inserts from team pool into remaining tables
-        #     i = num_total_tables - num_remaining_tables
-        #     team_pool_list = list(team_pool.items())
-        #     while len(team_pool) > 0:
-        #         curr_team = team_pool_list.pop()
-        #         # insert and stuff
-        #         if len(sorted_tables[i].state.players) < MAX_TABLE_SIZE:
-        #             insert_player(sorted_tables[i], curr_team[0], curr_team[1])
-        #         else:
-        #             i += 1
+            # LOOP: inserts from team pool into remaining tables
+            i = num_total_tables - num_remaining_tables
+            team_pool_list = list(team_pool.items())
+            while len(team_pool) > 0:
+                curr_team = team_pool_list.pop()
+                # insert and stuff
+                if len(sorted_tables[i].state.players) < MAX_TABLE_SIZE:
+                    insert_player(sorted_tables[i], curr_team[0], curr_team[1])
+                else:
+                    i += 1
 
-        #     # DELETED. removed refs to removed tables. delete from db.
-        #     for i in range(num_total_tables - num_remaining_tables):
-        #         curr = sorted_tables[i]
-        #         t.tables.pop(curr.table_id)
-        #         curr.delete_from_db()
+            # DELETED. removed refs to removed tables. delete from db.
+            for i in range(num_total_tables - num_remaining_tables):
+                curr = sorted_tables[i]
+                t.tables.pop(curr.table_id)
+                curr.delete_from_db()
 
-        #     # UPDATE state for newly inserted people into remaining tables.
-        #     for i in range(num_total_tables - num_remaining_tables, len(sorted_tables)):
-        #         Table.write_state_to_db(
-        #             sorted_tables[i].table_id, sorted_tables[i].state
-        #         )
+            # UPDATE state for newly inserted people into remaining tables.
+            for i in range(num_total_tables - num_remaining_tables, len(sorted_tables)):
+                Table.write_state_to_db(
+                    sorted_tables[i].table_id, sorted_tables[i].state
+                )
 
-        #     # UDPATE tournament table_ids (so moves will call on these tables)
-        #     remaining_table_ids = list(t.tables.keys())
-        #     db_client.table("tournaments").update({"tables": remaining_table_ids}).eq(
-        #         "id", t.tournament_id
-        #     ).execute()
+            # UDPATE tournament table_ids (so moves will call on these tables)
+            remaining_table_ids = list(t.tables.keys())
+            db_client.table("tournaments").update({"tables": remaining_table_ids}).eq(
+                "id", t.tournament_id
+            ).execute()
 
-        # # ============ #
-        # # RETABLING!!! #
-        # # ============ #
+        # ============ #
+        # RETABLING!!! #
+        # ============ #
 
-        # while True:
-        #     if len(t.tables) < 2:
-        #         break
+        while True:
+            if len(t.tables) < 2:
+                break
 
-        #     sorted_tables: list[Table] = sorted(
-        #         list(t.tables.values()), key=lambda x: len(x.state.players)
-        #     )
+            sorted_tables: list[Table] = sorted(
+                list(t.tables.values()), key=lambda x: len(x.state.players)
+            )
 
-        #     min_table = sorted_tables[0]
-        #     max_table = sorted_tables[-1]
+            min_table = sorted_tables[0]
+            max_table = sorted_tables[-1]
 
-        #     if (
-        #         min_table.table_id == max_table.table_id
-        #         or len(max_table.state.players) - len(min_table.state.players) < 2
-        #     ):
-        #         break  # already balanced
+            if (
+                min_table.table_id == max_table.table_id
+                or len(max_table.state.players) - len(min_table.state.players) < 2
+            ):
+                break  # already balanced
 
-        #     # taken from closest after bb
-        #     team_to_move_index = (max_table.state.index_of_small_blind + 2) % len(
-        #         max_table.state.players
-        #     )
+            # taken from closest after bb
+            team_to_move_index = (max_table.state.index_of_small_blind + 2) % len(
+                max_table.state.players
+            )
 
-        #     run_count = 0
-        #     while (
-        #         team_to_move_index == max_table.state.small_blind
-        #         or team_to_move_index
-        #         == (max_table.state.small_blind + 1) % len(max_table.state.players)
-        #         or team_to_move_index == max_table.state.index_to_action
-        #     ):
-        #         if run_count > len(max_table.state.players):
-        #             break
-        #         team_to_move_index = (team_to_move_index + 1) % len(
-        #             max_table.state.players
-        #         )
-        #         run_count += 1
-        #     if run_count > len(max_table.state.players):
-        #         break
+            run_count = 0
+            while (
+                team_to_move_index == max_table.state.small_blind
+                or team_to_move_index
+                == (max_table.state.small_blind + 1) % len(max_table.state.players)
+                or team_to_move_index == max_table.state.index_to_action
+            ):
+                if run_count > len(max_table.state.players):
+                    break
+                team_to_move_index = (team_to_move_index + 1) % len(
+                    max_table.state.players
+                )
+                run_count += 1
+            if run_count > len(max_table.state.players):
+                break
 
-        #     team_id = max_table.state.players.pop(team_to_move_index)
-        #     max_table.state.players_cards.pop(team_to_move_index)
-        #     held_money = max_table.state.held_money.pop(team_to_move_index)
-        #     bet_money = max_table.state.bet_money.pop(team_to_move_index)
+            team_id = max_table.state.players.pop(team_to_move_index)
+            max_table.state.players_cards.pop(team_to_move_index)
+            held_money = max_table.state.held_money.pop(team_to_move_index)
+            bet_money = max_table.state.bet_money.pop(team_to_move_index)
 
-        #     pot_value_without_current_round = max_table.state.pots[0].value
-        #     for player_bet in max_table.state.bet_money:
-        #         pot_value_without_current_round -= player_bet
+            pot_value_without_current_round = max_table.state.pots[0].value
+            for player_bet in max_table.state.bet_money:
+                pot_value_without_current_round -= player_bet
 
-        #     divided_main_pot_value = pot_value_without_current_round // len(
-        #         max_table.state.pots[0].players
-        #     )
-        #     if bet_money >= 0:
-        #         held_money += divided_main_pot_value + bet_money
-        #         max_table.state.pots[0].value -= divided_main_pot_value + bet_money
-        #     max_table.state.pots[0].players.remove(team_id)
+            divided_main_pot_value = pot_value_without_current_round // len(
+                max_table.state.pots[0].players
+            )
+            if bet_money >= 0:
+                held_money += divided_main_pot_value + bet_money
+                max_table.state.pots[0].value -= divided_main_pot_value + bet_money
+            max_table.state.pots[0].players.remove(team_id)
 
-        #     # case of if any sidepots exist
-        #     for pot in max_table.state.pots[1:]:
-        #         if team_id in pot.players:
-        #             divided_pot_value = pot.value // len(pot.players)
-        #             held_money += divided_pot_value
-        #             pot.value -= divided_pot_value
-        #             pot.players.remove(team_id)
+            # case of if any sidepots exist
+            for pot in max_table.state.pots[1:]:
+                if team_id in pot.players:
+                    divided_pot_value = pot.value // len(pot.players)
+                    held_money += divided_pot_value
+                    pot.value -= divided_pot_value
+                    pot.players.remove(team_id)
 
-        #     if team_to_move_index < max_table.state.index_of_small_blind:
-        #         max_table.state.index_of_small_blind -= 1
-        #     if team_to_move_index < max_table.state.index_to_action:
-        #         max_table.state.index_to_action -= 1
+            if team_to_move_index < max_table.state.index_of_small_blind:
+                max_table.state.index_of_small_blind -= 1
+            if team_to_move_index < max_table.state.index_to_action:
+                max_table.state.index_to_action -= 1
 
-        #     # moved to closest before sb (button or worse)
-        #     insert_player(min_table, team_id, held_money)
+            # moved to closest before sb (button or worse)
+            insert_player(min_table, team_id, held_money)
 
-        #     Table.write_state_to_db(max_table.table_id, max_table.state)
-        #     Table.write_state_to_db(min_table.table_id, min_table.state)
+            Table.write_state_to_db(max_table.table_id, max_table.state)
+            Table.write_state_to_db(min_table.table_id, min_table.state)
 
         return result_strs
 
