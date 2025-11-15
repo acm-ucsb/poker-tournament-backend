@@ -268,9 +268,9 @@ class Tournament:
 
             run_count = 0
             while (
-                team_to_move_index == max_table.state.small_blind
+                team_to_move_index == max_table.state.index_of_small_blind
                 or team_to_move_index
-                == (max_table.state.small_blind + 1) % len(max_table.state.players)
+                == (max_table.state.index_of_small_blind + 1) % len(max_table.state.players)
                 or team_to_move_index == max_table.state.index_to_action
             ):
                 if run_count > len(max_table.state.players):
