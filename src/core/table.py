@@ -127,6 +127,10 @@ class Table:
         # END OF HELPER FUNCTIONS FOR APPLY_BET #
         # ===================================== #
 
+        # prevent negatives.
+        if raise_size < -1:
+            raise_size = -1
+
         # AUTOMATIC ALL-IN FOR ANY RAISE GREATER THAN CURRENTLY HELD MONEY.
         if raise_size > s.held_money[s.index_to_action]:
             raise_size = s.held_money[s.index_to_action]
