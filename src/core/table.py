@@ -296,12 +296,15 @@ class Table:
 
                     # value of new sidepot is difference between larger bet and smaller bet, * len(all) - len(poorer: i cuz prefix sums are +1)
                     new_pot.value = (tup[0] - bet_size_indexes_tuples[i - 1][0]) * (
-                        prefix_sums[i + 1] - prefix_sums[i]
+                        prefix_sums[-1] - prefix_sums[i]
                     )
-                    for poorer_player_index in bet_size_indexes_tuples[i - 1][1]:
-                        if s.players[poorer_player_index] in new_pot.players:
-                            new_pot.players.remove(s.players[poorer_player_index])
-                    s.pots.insert(0, new_pot)
+                    for j in range(i):
+                        for poorer_player_index in bet_size_indexes_tuples[j][1]:
+                            if s.players[poorer_player_index] in new_pot.players:
+                                new_pot.players.remove(s.players[poorer_player_index])
+
+                    if len(new_pot.players) >= 2:
+                        s.pots.insert(0, new_pot)
 
             if len(bet_size_indexes_tuples) > 0:
                 # sidepot check if pots[0] was the bet size of an all-in.
@@ -316,7 +319,8 @@ class Table:
                     for index in all_ined_on_main:
                         if s.players[index] in new_pot.players:
                             new_pot.players.remove(s.players[index])
-                    s.pots.insert(0, new_pot)
+                    if len(new_pot.players) >= 2:
+                        s.pots.insert(0, new_pot)
 
             # ================= #
             # end sidepot logic #

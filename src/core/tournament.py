@@ -219,7 +219,7 @@ class Tournament:
                 # push to next table if too many players at this table
                 if len(sorted_tables[i].state.players) >= MAX_TABLE_SIZE:
                     i += 1
-                    if i > len(sorted_tables):
+                    if i >= len(sorted_tables):
                         break
                 insert_player(sorted_tables[i], curr_team[0], curr_team[1])
 
