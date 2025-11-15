@@ -198,10 +198,16 @@ class Table:
                 break
 
         # check for checking through from sb to action
-        index_btn = (s.index_of_small_blind + len(s.players) - 1) % len(s.players)
+        index_last_to_action = (s.index_of_small_blind + len(s.players) - 1) % len(
+            s.players
+        )
+        while s.bet_money[index_last_to_action] < 0:
+            index_last_to_action = (index_last_to_action + len(s.players) - 1) % len(
+                s.players
+            )
 
-        # all only checking or folds would end at button
-        if s.index_to_action != index_btn:
+        # all only checking or folds would end at last_to_action
+        if s.index_to_action == index_last_to_action:
             all_checks_or_folds = True
             for bet in s.bet_money:
                 if not (bet == 0 or bet == -1):
@@ -209,8 +215,7 @@ class Table:
                     all_checks_or_folds = False
                     break
             # betting round is not over! all checks/folds
-            if all_checks_or_folds:
-                round_over = False
+            round_over = all_checks_or_folds
 
         # exception: big blind in preflop can raise/check (round not over)
         index_bb = (s.index_of_small_blind + 1) % len(s.players)
