@@ -103,10 +103,17 @@ async def make_move_on_tables(
     description="for human input",
 )
 async def make_move_on_table(
-    table_id: str, raise_size: int, _: User = Depends(verify_admin_user)
+    table_id: str,
+    raise_size: int,
+    tournament_id: str | None = None,
+    _: User = Depends(verify_admin_user),
 ):
     try:
-        return await tournament.make_moves(table_id, raise_size)
+        return await tournament.make_moves(
+            table_id,
+            raise_size,
+            tournament_id,
+        )
     except KeyError:
         raise HTTPException(422, "table_id invalid")
     except ValueError:

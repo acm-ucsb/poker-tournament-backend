@@ -112,13 +112,20 @@ class Tournament:
 
         self._sync_tables()
 
-    async def make_moves(self, table_id: str | None = None, move: int | None = None, /):
+    async def make_moves(
+        self,
+        table_id: str | None = None,
+        raise_size: int | None = None,
+        tournament_id: str | None = None,
+    ):
+        t = Tournament(tournament_id) if tournament_id is not None else self
+
         result_strs = []
 
         # manual moves
-        if table_id is not None and move is not None:
+        if table_id is not None and raise_size is not None:
             try:
-                result_strs.append(await self.tables[table_id].make_move(move))
+                result_strs.append(await t.tables[table_id].make_move(raise_size))
             except BaseException as e:
                 print(e)
                 result_strs.append(
@@ -126,7 +133,7 @@ class Tournament:
                 )
 
         # actual running files!
-        for table in self.tables.values():
+        for table in t.tables.values():
             try:
                 result_strs.append(await table.make_move())
             except BaseException as e:
@@ -135,29 +142,29 @@ class Tournament:
                     f"did not run, {e}, {e.args}, {e.with_traceback(None)}, {traceback.format_exc()}"
                 )
 
-        def insert_player(t: Table, team_id: str, held_money: int):
+        def insert_player(tb: Table, team_id: str, held_money: int):
             index_before_sb = (
-                t.state.index_of_small_blind - 1 + len(t.state.players)
-            ) % len(t.state.players)
+                tb.state.index_of_small_blind - 1 + len(tb.state.players)
+            ) % len(tb.state.players)
 
-            t.state.players.insert(index_before_sb, team_id)
-            t.state.players_cards.insert(index_before_sb, [])
-            t.state.held_money.insert(index_before_sb, held_money)
-            t.state.bet_money.insert(index_before_sb, -1)
+            tb.state.players.insert(index_before_sb, team_id)
+            tb.state.players_cards.insert(index_before_sb, [])
+            tb.state.held_money.insert(index_before_sb, held_money)
+            tb.state.bet_money.insert(index_before_sb, -1)
 
-            if index_before_sb <= t.state.index_of_small_blind:
-                t.state.index_of_small_blind += 1
-            if index_before_sb <= t.state.index_to_action:
-                t.state.index_to_action += 1
+            if index_before_sb <= tb.state.index_of_small_blind:
+                tb.state.index_of_small_blind += 1
+            if index_before_sb <= tb.state.index_to_action:
+                tb.state.index_to_action += 1
 
-            db_client.table("teams").update({"table_id": t.table_id}).eq(
+            db_client.table("teams").update({"table_id": tb.table_id}).eq(
                 "id", team_id
             ).execute()
 
         # table reduction!
-        num_total_tables = len(self.tables)
+        num_total_tables = len(t.tables)
         num_total_teams = 0
-        for table in self.tables.values():
+        for table in t.tables.values():
             num_total_teams += len(table.state.players)
 
         if (
@@ -165,7 +172,7 @@ class Tournament:
             and num_total_teams <= (num_total_tables - 1) * MAX_TABLE_SIZE
         ):
             sorted_tables: list[Table] = sorted(
-                self.tables.values(), key=lambda x: len(x.state.players)
+                t.tables.values(), key=lambda x: len(x.state.players)
             )
 
             num_remaining_tables = math.ceil(num_total_teams / MAX_TABLE_SIZE)
@@ -217,7 +224,7 @@ class Tournament:
             # DELETED. removed refs to removed tables. delete from db.
             for i in range(num_total_tables - num_remaining_tables):
                 curr = sorted_tables[i]
-                self.tables.pop(curr.table_id)
+                t.tables.pop(curr.table_id)
                 curr.delete_from_db()
 
             # UPDATE state for newly inserted people into remaining tables.
@@ -227,9 +234,9 @@ class Tournament:
                 )
 
             # UDPATE tournament table_ids (so moves will call on these tables)
-            remaining_table_ids = list(self.tables.keys())
+            remaining_table_ids = list(t.tables.keys())
             db_client.table("tournaments").update({"tables": remaining_table_ids}).eq(
-                "id", self.tournament_id
+                "id", t.tournament_id
             ).execute()
 
         # ============ #
@@ -237,11 +244,11 @@ class Tournament:
         # ============ #
 
         while True:
-            if len(self.tables) < 2:
+            if len(t.tables) < 2:
                 break
 
             sorted_tables: list[Table] = sorted(
-                list(self.tables.values()), key=lambda x: len(x.state.players)
+                list(t.tables.values()), key=lambda x: len(x.state.players)
             )
 
             min_table = sorted_tables[0]
