@@ -205,13 +205,19 @@ class Table:
         index_last_to_action = (s.index_of_small_blind + len(s.players) - 1) % len(
             s.players
         )
+        n = 0
         while (
             s.bet_money[index_last_to_action] == -1
             or s.held_money[index_last_to_action] == 0
         ):
+            if n > len(s.players):
+                break
             index_last_to_action = (index_last_to_action + len(s.players) - 1) % len(
                 s.players
             )
+            n += 1
+        # no checking through because no one can be last_to_action
+        index_last_to_action = -1
 
         # all only checking or folds would end at last_to_action
         if s.index_to_action == index_last_to_action:
