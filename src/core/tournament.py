@@ -214,7 +214,7 @@ class Tournament:
             # LOOP: inserts from team pool into remaining tables
             i = num_total_tables - num_remaining_tables
             team_pool_list = list(team_pool.items())
-            while len(team_pool) > 0:
+            while len(team_pool_list) > 0:
                 curr_team = team_pool_list.pop()
                 # insert and stuff
                 if len(sorted_tables[i].state.players) < MAX_TABLE_SIZE:
