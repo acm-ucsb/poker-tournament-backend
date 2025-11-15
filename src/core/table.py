@@ -328,14 +328,13 @@ class Table:
             while i < len(s.pots):
                 merged_value = s.pots[i].value
                 j = i + 1
-                while j < len(s.pots):
-                    if len(s.pots[i].players) == len(s.pots[j].players):
-                        merged_value += s.pots[j].value
-                    else:
-                        i = j
-                        break
+                while j < len(s.pots) and len(s.pots[i].players) == len(
+                    s.pots[j].players
+                ):
+                    merged_value += s.pots[j].value
                     j += 1
                 new_pots.append(Pot(value=merged_value, players=s.pots[i].players))
+                i = j
             s.pots = new_pots
 
             # ================= #
