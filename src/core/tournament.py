@@ -261,6 +261,9 @@ class Tournament:
                 "id", t.tournament_id
             ).execute()
 
+            # Re-sync after table reduction to get fresh state before regular retabling
+            t._sync_tables()
+
         # ============ #
         # RETABLING!!! #
         # ============ #
