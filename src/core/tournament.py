@@ -216,11 +216,12 @@ class Tournament:
             team_pool_list = list(team_pool.items())
             while len(team_pool_list) > 0:
                 curr_team = team_pool_list.pop()
-                # insert and stuff
-                if len(sorted_tables[i].state.players) < MAX_TABLE_SIZE:
-                    insert_player(sorted_tables[i], curr_team[0], curr_team[1])
-                else:
+                # push to next table if too many players at this table
+                if len(sorted_tables[i].state.players) >= MAX_TABLE_SIZE:
                     i += 1
+                    if i > len(sorted_tables):
+                        break
+                insert_player(sorted_tables[i], curr_team[0], curr_team[1])
 
             # DELETED. removed refs to removed tables. delete from db.
             for i in range(num_total_tables - num_remaining_tables):
@@ -270,7 +271,8 @@ class Tournament:
             while (
                 team_to_move_index == max_table.state.index_of_small_blind
                 or team_to_move_index
-                == (max_table.state.index_of_small_blind + 1) % len(max_table.state.players)
+                == (max_table.state.index_of_small_blind + 1)
+                % len(max_table.state.players)
                 or team_to_move_index == max_table.state.index_to_action
             ):
                 if run_count > len(max_table.state.players):
