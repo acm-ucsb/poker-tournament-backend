@@ -278,6 +278,16 @@ class Table:
 
             # reveal new cards
             available_cards = Table.available_cards_shuffled(s)
+
+            # exception: all-ins result in only one person remaining. must require 2 players still able to bet.
+            num_all_in = 0
+            for held in s.held_money:
+                if held == 0:
+                    num_all_in += 1
+            if len(s.players) - num_all_in < 2:
+                while len(s.community_cards) < 5:
+                    s.community_cards.append(available_cards.pop())
+
             if len(s.community_cards) == 0:
                 s.community_cards += available_cards[:3]
                 new_round_set_index_to_action()
