@@ -143,7 +143,7 @@ async def run_file(team_id: str, state: GameState) -> FileRunResult:
                 text=True,
                 check=True,  # ensure the command raises exception on failure
                 cwd=uploads_dir,  # change directory to uploads
-                timeout=5.0,
+                timeout=10.0,
             )
             return {
                 "status": "success",
@@ -176,7 +176,7 @@ async def run_file(team_id: str, state: GameState) -> FileRunResult:
                 text=True,
                 check=True,  # ensure the command raises exception on failure
                 cwd=uploads_dir,  # change directory to uploads
-                timeout=5.0,
+                timeout=10.0,
             )
             return {
                 "status": "success",
