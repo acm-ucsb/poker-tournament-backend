@@ -64,9 +64,7 @@ async def run_code_by_team_id(
     responses=unauth_res,
     description="-2 would be error",
 )
-async def rounded_run_code_by_team_id(
-    team_id: str, state: GameState, _: User = Depends(verify_admin_user)
-):
+async def rounded_run_code_by_team_id(team_id: str, state: GameState):
     result = await helpers.run_file(team_id, state)
     raise_size_str = result.get("stdout")
     if raise_size_str is None:
