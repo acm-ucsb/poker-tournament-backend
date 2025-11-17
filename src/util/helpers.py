@@ -143,12 +143,18 @@ async def run_file(team_id: str, state: GameState) -> FileRunResult:
                 text=True,
                 check=True,  # ensure the command raises exception on failure
                 cwd=uploads_dir,  # change directory to uploads
+                timeout=10.0,
             )
             return {
                 "status": "success",
                 "stdout": process.stdout,
                 "stderr": process.stderr,
                 "message": "Python file processed successfully.",
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "error",
+                "message": "Python execution timed out after 5 seconds",
             }
         except subprocess.CalledProcessError as e:
             return {
@@ -170,12 +176,18 @@ async def run_file(team_id: str, state: GameState) -> FileRunResult:
                 text=True,
                 check=True,  # ensure the command raises exception on failure
                 cwd=uploads_dir,  # change directory to uploads
+                timeout=10.0,
             )
             return {
                 "status": "success",
                 "stdout": process.stdout,
                 "stderr": process.stderr,
                 "message": "C++ file processed successfully.",
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                "status": "error",
+                "message": "C++ execution timed out after 5 seconds",
             }
         except subprocess.CalledProcessError as e:
             return {

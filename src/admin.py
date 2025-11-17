@@ -58,6 +58,31 @@ async def run_code_by_team_id(
     return await helpers.run_file(team_id, state)
 
 
+@admin_router.post(
+    "/submission/roundedrun/",
+    response_model=int,
+    responses=unauth_res,
+    description="-2 would be error",
+)
+async def rounded_run_code_by_team_id(team_id: str, state: GameState):
+    result = await helpers.run_file(team_id, state)
+    raise_size_str = result.get("stdout")
+    if raise_size_str is None:
+        return -2
+
+    raise_size = int(raise_size_str)
+    denominations = [25, 100, 500, 1000]
+
+    rounded_value = 0
+    for denom in sorted(denominations, reverse=True):
+        count = raise_size // denom
+        if count > 0:
+            rounded_value += denom * count
+            raise_size -= denom * count
+
+    return rounded_value
+
+
 @admin_router.get("/tables/{table_id}/", response_model=GameState, responses=unauth_res)
 def read_full_gamestate(table_id: str, _: User = Depends(verify_admin_user)):
     return Table.read_state_from_db(table_id)
@@ -103,10 +128,17 @@ async def make_move_on_tables(
     description="for human input",
 )
 async def make_move_on_table(
-    table_id: str, raise_size: int, _: User = Depends(verify_admin_user)
+    table_id: str,
+    raise_size: int,
+    tournament_id: str | None = None,
+    _: User = Depends(verify_admin_user),
 ):
     try:
-        return await tournament.make_moves([table_id], [raise_size])
+        return await tournament.make_moves(
+            table_id,
+            raise_size,
+            tournament_id,
+        )
     except KeyError:
         raise HTTPException(422, "table_id invalid")
     except ValueError:
@@ -144,3 +176,25 @@ async def increase_blind(
         return "Successfully increased blinds for all tables."
     except KeyError:
         raise HTTPException(422, "table_ids invalid OR tournament_id invalid")
+
+
+@admin_router.post(
+    "/round_by_denominations/",
+    responses=unauth_res,
+    description="Greedy for denoms. If there are any negative or 0 denominations, it will go with the default denoms of [25, 100, 500, 1000].",
+)
+def round_by_denominations(
+    raise_size: int,
+    denominations: list[int] | None = None,
+    _: User = Depends(verify_admin_user),
+):
+    if denominations is None or min(denominations) <= 0:
+        denominations = [25, 100, 500, 1000]
+
+    result = {}
+    for denom in sorted(denominations, reverse=True):
+        count = raise_size // denom
+        if count > 0:
+            result[denom] = count
+            raise_size -= denom * count
+    return result
